@@ -1,1 +1,0 @@
-ERROR: [Thread crash] main thread is not in main loop

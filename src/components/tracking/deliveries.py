@@ -13,21 +13,7 @@ class Deliveries:
         event_type = ""
 
 
-        if data["jobDelivered"] and not data["onJob"]:
-            memory = load_json(resource_path("data/memory.json"))
-            job_data = memory["jobs"][game]
-            if not job_data == {}:
-                event_type = "job_delivered"
-                job_data["jobStartingTime"] = data["jobStartingTime"]
-                job_data["jobFinishedTime"] = data["jobFinishedTime"]
-                self._handle_job_delivered(job_data)
-                write_log("- Updating local memory...")
-                memory["jobs"][game] = {}
-                save_json(memory, resource_path("data/memory.json"))
-                write_log("- Local memory updated.")
-
-
-        elif data["onJob"]:
+        if data["onJob"]:
             job_data = {
                 "market": data["jobMarket"],
                 "truck_model_id": data["truckId"],
@@ -59,6 +45,32 @@ class Deliveries:
                 write_log("- Local memory updated.")
 
 
+        elif data["jobCancelled"]:
+            memory = load_json(resource_path("data/memory.json"))
+            job_data = memory["jobs"][game]
+            if not job_data == {}:
+                event_type = "job_cancelled"
+                self._handle_job_cancelled(job_data)
+                write_log("- Updating local memory...")
+                memory["jobs"][game] = {}
+                save_json(memory, resource_path("data/memory.json"))
+                write_log("- Local memory updated.")
+
+
+        else:
+            memory = load_json(resource_path("data/memory.json"))
+            job_data = memory["jobs"][game]
+            if not job_data == {}:
+                event_type = "job_delivered"
+                job_data["jobStartingTime"] = data["jobStartingTime"]
+                job_data["jobFinishedTime"] = data["jobFinishedTime"]
+                self._handle_job_delivered(job_data)
+                write_log("- Updating local memory...")
+                memory["jobs"][game] = {}
+                save_json(memory, resource_path("data/memory.json"))
+                write_log("- Local memory updated.")
+
+
         return event_type 
 
 
@@ -68,7 +80,6 @@ class Deliveries:
         write_log("- Transmitting data to API...")
 
         user_data = load_json(resource_path("data/user.json"))
-
         jobID = generate_job_id(job_data)
 
         payload = {
@@ -102,6 +113,23 @@ class Deliveries:
             "event": "job_delivered",
             "user": user_data,
             "data": job_data
+        }
+        response = requests.post(self.webhook_url, json=payload)
+        write_log(f"- Response status: {response.status_code} | ")
+
+
+    def _handle_job_cancelled(self, job_data: dict):
+        write_log("Event Triggered: job_cancelled")
+        write_log("- Transmitting data to API...")
+
+        user_data = load_json(resource_path("data/user.json"))
+
+        jobID = generate_job_id(job_data)
+
+        payload = {
+            "event": "job_delivered",
+            "user": user_data,
+            "data": {"id": jobID}
         }
         response = requests.post(self.webhook_url, json=payload)
         write_log(f"- Response status: {response.status_code} | ")

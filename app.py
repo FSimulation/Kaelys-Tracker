@@ -39,7 +39,7 @@ class LoginWindow(ctk.CTk):
 
 
     def setup_ui(self):
-        image_path = resource_path("src/KaelysHUB.png")
+        image_path = resource_path("src/static/KaelysHUB.png")
         pil_image = Image.open(image_path)
         image = ctk.CTkImage(size=(250, 140), light_image=pil_image)
         image_label = ctk.CTkLabel(self, image=image, text="")
@@ -103,6 +103,14 @@ class MainWindow(ctk.CTk):
         self.stop_event.set()
 
         self.setup_ui()
+
+
+
+    def print_game_data(self):
+        truck_telemetry.init()
+        data = truck_telemetry.get_data()
+        write_log(data)
+        truck_telemetry.deinit()
 
 
     
@@ -175,6 +183,9 @@ class MainWindow(ctk.CTk):
                         self.game_notif("Delivery in progress. Drive safe!", delay=5000)
                     elif event_type == "job_delivered":
                         self.game_notif("Delivery completed. Good job!", delay=5000)
+                    elif event_type == "job_cancelled":
+                        self.game_notif("Delivery cancelled. Another \ndriver got the freight away.", delay=5000)
+                    
 
             except (FileNotFoundError, AttributeError) as sdk_err:
                 self.stop_tracking()
@@ -188,7 +199,7 @@ class MainWindow(ctk.CTk):
                 self.stop_tracking()
                 break
 
-            time.sleep(5)
+            time.sleep(3)
 
 
 
@@ -228,6 +239,10 @@ class MainWindow(ctk.CTk):
 
         self.tracking_button = ctk.CTkButton(self, text="Start tracking", command=self.start_tracking)
         self.tracking_button.pack(pady=10)
+
+        # BOUTON DE TEST POUR L'AFFICHAGE DES DONNES DU SDK
+        #self.test_button = ctk.CTkButton(self, text="Print game data", command=self.print_game_data)
+        #self.test_button.pack(pady=10)
 
 
 
