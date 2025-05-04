@@ -233,6 +233,9 @@ class MainWindow(ctk.CTk):
     def setup_ui(self):
         welcome_label = ctk.CTkLabel(self, text=f'Welcome, {self.user_data["username"]}!', font=("Arial", 20, "bold"))
         welcome_label.pack(pady=10)
+        version_label = ctk.CTkLabel(master=self, text="version 04-05-2025", text_color="gray")
+        version_label.place(relx=0.01, rely=1.0, anchor="sw")  # En bas à gauche
+
 
         self.game_status_label = ctk.CTkLabel(self, text="Tracking is disabled", font=("Arial", 14), text_color="red")
         self.game_status_label.pack(pady=5)
