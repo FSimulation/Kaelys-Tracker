@@ -39,6 +39,7 @@ class Deliveries:
                 event_type = "job_started"
 
                 self._handle_job_start(job_data)
+                ### AFTER HANDLING
                 write_log("- Updating local memory...")
                 memory["jobs"][game] = job_data
                 save_json(memory, resource_path("data/memory.json"))
@@ -51,6 +52,7 @@ class Deliveries:
             if not job_data == {}:
                 event_type = "job_cancelled"
                 self._handle_job_cancelled(job_data)
+                # AFTER HANDLING
                 write_log("- Updating local memory...")
                 memory["jobs"][game] = {}
                 save_json(memory, resource_path("data/memory.json"))
@@ -65,6 +67,7 @@ class Deliveries:
                 job_data["jobStartingTime"] = data["jobStartingTime"]
                 job_data["jobFinishedTime"] = data["jobFinishedTime"]
                 self._handle_job_delivered(job_data)
+                # AFTER HANDLING
                 write_log("- Updating local memory...")
                 memory["jobs"][game] = {}
                 save_json(memory, resource_path("data/memory.json"))
@@ -127,7 +130,7 @@ class Deliveries:
         jobID = generate_job_id(job_data)
 
         payload = {
-            "event": "job_delivered",
+            "event": "job_cancelled",
             "user": user_data,
             "data": {"id": jobID}
         }
