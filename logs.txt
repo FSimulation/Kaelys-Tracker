@@ -1,0 +1,327 @@
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Tracking stopped cleanly
+INFO: Tracking thread already running, skipping start.
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Event Triggered: job_started
+INFO: - Transmitting data to API...
+INFO: - Response status: 200 | 
+INFO: - Updating local memory...
+INFO: - Local memory updated.
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled
+INFO: Data received from SDK
+INFO: Data change detected.
+INFO: Deliveries object ready
+INFO: Deliveries handled

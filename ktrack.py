@@ -3,11 +3,13 @@ from truck_telemetry import truck_telemetry
 from PIL import Image
 from src.components.tracking.deliveries import Deliveries
 from src.components.pretools import save_json, load_json, resource_path, write_log
+import src.components.operations.ui as ui
 
 
 lastData = {}
 
 
+API_URL = "https://api-kaelysvirtual.onrender.com"
 
 
 def game_notif(message: str, delay=5000):
@@ -66,7 +68,7 @@ class LoginWindow(ctk.CTk):
             "username": self.username.get(),
             "password": self.password.get()
         }
-        response = requests.get("https://api-kaelysvirtual.onrender.com/tracker/login", json=creds)
+        response = requests.get(f"{API_URL}/tracker/login", json=creds)
         if response.status_code == 200:
             data = response.json()
 
@@ -103,11 +105,13 @@ class MainWindow(ctk.CTk):
         self.user_data = load_json(resource_path("data/user.json"))
         self.stop_event = threading.Event()
         self.stop_event.set()
+        self.resizable(False, False)
 
         self.setup_ui()
 
 
 
+    ### OPERATIONS
     def print_game_data(self):
         truck_telemetry.init()
         data = truck_telemetry.get_data()
@@ -115,11 +119,9 @@ class MainWindow(ctk.CTk):
         truck_telemetry.deinit()
 
 
-    
     def update_game_status(self, status: str):
         self.game_status_label.configure(text=status, text_color="green")
         self.game_status_label.update()
-
 
     
     def show_error(self, message: str):
@@ -135,11 +137,9 @@ class MainWindow(ctk.CTk):
         error_window.grab_set()
         write_log(message, type="error")
 
-
     
     def game_notif(self, message: str, delay=5000):
         self.after(500, self.show_game_notification, message, delay)
-
 
 
     def show_game_notification(self, message: str, delay: int):
@@ -154,12 +154,11 @@ class MainWindow(ctk.CTk):
         ctk.CTkLabel(notif, text=message, font=ctk.CTkFont(size=15, weight="bold")).pack(pady=2)
 
         notif.after(delay, notif.destroy)
-
     
 
     def run_sdk_loop(self):
         global lastData
-        deliveries = Deliveries("https://api-kaelysvirtual.onrender.com/tracker/deliveries")
+        deliveries = Deliveries(f"{API_URL}/tracker/deliveries")
 
         while not self.stop_event.is_set():
             try:
@@ -204,7 +203,6 @@ class MainWindow(ctk.CTk):
             time.sleep(3)
 
 
-
     def start_tracking(self):
         if hasattr(self, "sdk_thread") and self.sdk_thread.is_alive():
             write_log("Tracking thread already running, skipping start.")
@@ -221,7 +219,6 @@ class MainWindow(ctk.CTk):
             write_log("SDK init failed: FileNotFoundError", type="error")
 
 
-
     def stop_tracking(self):
         self.stop_event.set()
         truck_telemetry.deinit()
@@ -230,19 +227,54 @@ class MainWindow(ctk.CTk):
         self.game_status_label.update()
         write_log("Tracking stopped cleanly")
 
+
     
-
+    ### UI SETUP
     def setup_ui(self):
-        welcome_label = ctk.CTkLabel(self, text=f'Welcome, {self.user_data["username"]}!', font=("Arial", 20, "bold"))
-        welcome_label.pack(pady=10)
-        version_label = ctk.CTkLabel(master=self, text="version 05-05-2025", text_color="gray")
-        version_label.place(relx=0.01, rely=1.0, anchor="sw")  # En bas à gauche
+        # WELCOME & VERSION LABELS
+        self.welcome_label = ctk.CTkLabel(self, text=f'Welcome, {self.user_data["username"]}!', font=("Poppins", 20, "italic"))
+        self.welcome_label.pack(pady=10)
+        self.version_label = ctk.CTkLabel(master=self, text="version 05-05-2025", text_color="gray")
+        self.version_label.place(relx=0.01, rely=1.0, anchor="sw")  # En bas à gauche
+
+        ## TAB VIEW
+        self.tabview = ctk.CTkTabview(self, width=580, height=360)
+        self.tabview.pack(padx=10, pady=10, fill="both", expand=True)
+        self.tabview.add("Home")
+        self.tabview.add("Settings")
+        self.tabview.add("Infos")
 
 
-        self.game_status_label = ctk.CTkLabel(self, text="Tracking is disabled", font=("Arial", 14), text_color="red")
+        ### HOME TAB
+        ## LEFT FRAME
+        self.frame_left_home = ctk.CTkFrame(
+            self.tabview.tab("Home"),
+            width=280,
+            height=300,
+            fg_color="#303030",  # gris foncé
+            corner_radius=10
+        )
+        self.frame_left_home.pack(side="left", fill="both", expand=True, padx=(20, 10), pady=10)
+
+        ## RIGHT FRAME
+        self.frame_right_home = ctk.CTkFrame(
+            self.tabview.tab("Home"),
+            width=280,
+            height=300,
+            fg_color="#303030",
+            corner_radius=10
+        )
+        self.frame_right_home.pack(side="right", fill="both", expand=True, padx=(10, 20), pady=10)
+
+        # LEFT FRAME CONTENTS
+        self.user_profile = ui.UserProfile(self.frame_left_home)
+        self.user_profile.pack(pady=20)
+
+        # RIGHT FRAME CONTENTS
+        self.game_status_label = ctk.CTkLabel(self.frame_right_home, text="Tracking is disabled", font=("Arial", 14), text_color="red")
         self.game_status_label.pack(pady=5)
 
-        self.tracking_button = ctk.CTkButton(self, text="Start tracking", command=self.start_tracking)
+        self.tracking_button = ctk.CTkButton(self.frame_right_home, text="Start tracking", command=self.start_tracking)
         self.tracking_button.pack(pady=10)
 
         # BOUTON DE TEST POUR L'AFFICHAGE DES DONNES DU SDK
@@ -250,8 +282,17 @@ class MainWindow(ctk.CTk):
         #self.test_button.pack(pady=10)
 
 
+        ## SETTINGS TAB
+        self.settings_page = ui.SettingsPage(self.tabview.tab("Settings"))
+        self.settings_page.pack(pady=20)
+
+        ## SETTINGS TAB
+        self.settings_page = ui.InfosPage(self.tabview.tab("Infos"))
+        self.settings_page.pack(pady=20)
+
+
 
 if __name__ == "__main__":
-    app = LoginWindow()
+    app = MainWindow()
     app.mainloop()
 
