@@ -1,8 +1,12 @@
-import requests, customtkinter as ctk
+import requests, customtkinter as ctk, threading, time
 from PIL import Image
+from truck_telemetry import truck_telemetry
 from ktrack import API_URL
 from src.components.pretools import write_log, load_json, resource_path, load_txt
+from src.components.tracking.deliveries import Deliveries
 
+
+lastData = {}
 
 
 class JobCard(ctk.CTkFrame):
@@ -27,15 +31,6 @@ class UserProfile(ctk.CTkFrame):
         super().__init__(master, fg_color="transparent", *args, **kwargs)
 
 
-
-        ### GET USER INFOS
-        self.local_user = load_json(resource_path("data/user.json"))
-        self.user_id = self.local_user["id"]
-        self.request_data = self.get_user_info(self.user_id)
-        self.user_data = self.request_data["user"]
-
-
-
         ### TOP FRAME
         self.top_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.top_frame.pack(pady=10)
@@ -50,10 +45,10 @@ class UserProfile(ctk.CTkFrame):
         self.pfp_label.pack(pady=5)
 
         # USER INFOS
-        self.user_name = ctk.CTkLabel(self.top_frame, text=f"Your ID: {self.user_data['id']}", font=("Poppins", 12, "bold"))
-        self.user_name.pack(pady=2)
-        self.user_name = ctk.CTkLabel(self.top_frame, text=f"Your Discord ID: {self.user_data['discordID']}", font=("Poppins", 12, "bold"))
-        self.user_name.pack(pady=2)
+        self.user_id_label = ctk.CTkLabel(self.top_frame, text="Your ID:", font=("Poppins", 12, "bold"))
+        self.user_id_label.pack(pady=2)
+        self.user_discordID_label = ctk.CTkLabel(self.top_frame, text=f"Your Discord ID:", font=("Poppins", 12, "bold"))
+        self.user_discordID_label.pack(pady=2)
         
         ### SEPARATION BAR
         self.horizontal_bar = ctk.CTkFrame(self, height=3, width=300, corner_radius=0)
@@ -74,7 +69,7 @@ class UserProfile(ctk.CTkFrame):
 
         self.deliveries_total_label = ctk.CTkLabel(self.left_frame, text="Deliveries", font=("Arial", 14))
         self.deliveries_total_label.pack(padx=15, pady=5)
-        self.deliveries_total_value = ctk.CTkLabel(self.left_frame, text=str(self.user_data["deliveriesTotal"]), font=("Arial", 14))
+        self.deliveries_total_value = ctk.CTkLabel(self.left_frame, text="", font=("Arial", 14))
         self.deliveries_total_value.pack(padx=15, pady=5)
 
         # SEPARATOR 1
@@ -87,7 +82,7 @@ class UserProfile(ctk.CTkFrame):
 
         self.wallet_label = ctk.CTkLabel(self.middle_frame, text="Wallet", font=("Arial", 14))
         self.wallet_label.pack(padx=15, pady=5)
-        self.wallet_value = ctk.CTkLabel(self.middle_frame, text=f"${self.user_data['wallet']}", font=("Arial", 14))
+        self.wallet_value = ctk.CTkLabel(self.middle_frame, text="", font=("Arial", 14))
         self.wallet_value.pack(padx=15, pady=5)
 
         # SEPARATOR 2
@@ -100,9 +95,14 @@ class UserProfile(ctk.CTkFrame):
 
         self.rank_label = ctk.CTkLabel(self.right_frame, text="Rank", font=("Arial", 14))
         self.rank_label.pack(padx=15, pady=5)
-        self.rank_value = ctk.CTkLabel(self.right_frame, text=f"N°{self.user_data['rank']}", font=("Arial", 14))
+        self.rank_value = ctk.CTkLabel(self.right_frame, text="", font=("Arial", 14))
         self.rank_value.pack(padx=15, pady=5)
 
+        ### LAUNCH UPDATE THREAD LOOP
+        self.user_data = load_json(resource_path("data/user.json"))
+        self.user_id = self.user_data["id"]
+        self.update_profile_loop = threading.Thread(target=self.update_user_profile, daemon=True)
+        self.update_profile_loop.start()
 
 
         # ### ACTIVE CONTRACTS
@@ -138,24 +138,32 @@ class UserProfile(ctk.CTkFrame):
         
     
 
-    def get_user_info(self, user_id):
+    def update_user_profile(self):
         """
         Fetch user information from the server.
         """
-        payload = {"id": user_id}
+        while True:
+            payload = {"id": self.user_id}
 
-        try:
-            response = requests.get(f"{API_URL}/tracker/user", json=payload)
-            data = response.json()
-            if data["error"]:
-                write_log(f"Error fetching user info: {data['message']}", type="error")
-                return None
-            else:
-                return data
+            try:
+                response = requests.get(f"{API_URL}/tracker/user", json=payload)
+                data = response.json()
+                if data["error"]:
+                    write_log(f"Error fetching user info: {data['message']}", type="error")
+                    return
+                else:
+                    pick = data["user"]
+                    self.user_id_label.configure(text=f"Your ID: {pick['id']}", font=("Poppins", 12, "bold"))
+                    self.user_discordID_label.configure(text=f"Your Discord ID: {pick['discordID']}", font=("Poppins", 12, "bold"))
+                    self.deliveries_total_value.configure(text=f"{pick['deliveriesTotal']}")
+                    self.wallet_value.configure(text=f"{pick['wallet']}")
+                    self.rank_value.configure(text=f"{pick['rank']}")
         
-        except requests.RequestException as e:
-            print(f"Error fetching user info: {e}")
-            return None
+            except requests.RequestException as e:
+                write_log(f"Error fetching user info: {e}", type="error")
+                return None
+            
+            time.sleep(15)  # Update every 30 seconds
 
 
 
@@ -222,12 +230,7 @@ class SettingsPage(ctk.CTkFrame):
             self.column_1,
             values=["Discord Guild", "Direct Message", "Both"],
             command=lambda x: print(f"Job notifications set to {x}"),
-            button_color="#323232",
-            fg_color="#323232",
             text_color="white",
-            dropdown_fg_color="#323232",
-            dropdown_hover_color="#444444",
-            button_hover_color="#444444",
         )
         self.job_notif_select.pack(pady=5, padx=10)
 
@@ -250,18 +253,14 @@ class InfosPage(ctk.CTkFrame):
 
 
         # === CHANGELOG ===
-        display = self.load_changelog()
-        display.pack(pady=2, padx=2)
+        display = self.load_infos()
+        display.pack(pady=2, padx=2, fill="x")
 
     
-    def load_changelog(self):
+    def load_infos(self):
         """
-        Load the changelog from the server.
+        Load the changelog from local.
         """
-        changelog = load_txt(resource_path("changelog.txt"))
-        display_text = f"""
-        ===== CHANGELOG =====\n\n
-        {changelog}
-        """
-        display = ctk.CTkLabel(self.main_frame, width=400, height=300, text=display_text)
+        display_text = load_txt(resource_path("properties/readme.txt"))
+        display = ctk.CTkLabel(self.main_frame, width=300, height=300, text=display_text, anchor="w", justify="left", font=("Poppins", 12), text_color="white")
         return display

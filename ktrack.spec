@@ -5,7 +5,7 @@ a = Analysis(
     ['ktrack.py'],
     pathex=[],
     binaries=[],
-    datas=[('crash.txt', '.'), ('logs.txt', '.'), ('data/memory.json', 'data'), ('data/user.json', 'data'), ('src/static/KaelysHUB.png', 'src/static'), ('src/static/ktrack.ico', 'src/static'), ('changelog.txt', '.')],
+    datas=[('crash.txt', '.'), ('logs.txt', '.'), ('data/memory.json', 'data'), ('data/user.json', 'data'), ('src/static/KaelysHUB.png', 'src/static'), ('src/static/default_pfp.png', 'src/static'), ('src/static/ktrack.ico', 'src/static'), ('changelog.txt', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},

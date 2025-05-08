@@ -1,4 +1,4 @@
-import customtkinter as ctk, requests, threading, time
+import customtkinter as ctk, requests, threading, time, ctypes
 from truck_telemetry import truck_telemetry
 from PIL import Image
 from src.components.tracking.deliveries import Deliveries
@@ -35,14 +35,14 @@ class LoginWindow(ctk.CTk):
         self.geometry("600x400")
         self.iconbitmap(resource_path("src/static/ktrack.ico"))
         ctk.set_appearance_mode("Dark")
-        ctk.set_default_color_theme("blue")
+        ctk.set_default_color_theme(resource_path("src/theme.json"))
         self.resizable(False, False)
 
         self.setup_ui()
 
 
     def setup_ui(self):
-        image_path = resource_path("src/static/KaelysHUB.png")
+        image_path = resource_path("src/static/LoginBanner.png")
         pil_image = Image.open(image_path)
         image = ctk.CTkImage(size=(250, 140), light_image=pil_image)
         image_label = ctk.CTkLabel(self, image=image, text="")
@@ -101,14 +101,28 @@ class MainWindow(ctk.CTk):
         self.geometry("700x700")
         self.iconbitmap(resource_path("src/static/ktrack.ico"))
         ctk.set_appearance_mode("Dark")
-        ctk.set_default_color_theme("blue")
+        ctk.set_default_color_theme(resource_path("src/theme.json"))
         self.user_data = load_json(resource_path("data/user.json"))
         self.stop_event = threading.Event()
         self.stop_event.set()
         self.resizable(False, False)
+        self.protocol("WM_DELETE_WINDOW", lambda: None)
+
+        self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, command=self.on_close, fg_color="darkred", hover_color="red")
+        self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
+        self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
+        self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
 
         self.setup_ui()
 
+
+
+    ### CLOSE APP
+    def on_close(self):
+        self.stop_tracking()
+        time.sleep(0.5)
+        write_log("Application closed cleanly")
+        self.destroy()
 
 
     ### OPERATIONS
@@ -118,10 +132,6 @@ class MainWindow(ctk.CTk):
         write_log(data)
         truck_telemetry.deinit()
 
-
-    def update_game_status(self, status: str):
-        self.game_status_label.configure(text=status, text_color="green")
-        self.game_status_label.update()
 
     
     def show_error(self, message: str):
@@ -138,8 +148,10 @@ class MainWindow(ctk.CTk):
         write_log(message, type="error")
 
     
+
     def game_notif(self, message: str, delay=5000):
         self.after(500, self.show_game_notification, message, delay)
+
 
 
     def show_game_notification(self, message: str, delay: int):
@@ -156,51 +168,44 @@ class MainWindow(ctk.CTk):
         notif.after(delay, notif.destroy)
     
 
+
     def run_sdk_loop(self):
         global lastData
         deliveries = Deliveries(f"{API_URL}/tracker/deliveries")
 
         while not self.stop_event.is_set():
             try:
-                data = truck_telemetry.get_data()
-                write_log("Data received from SDK")
+                self.telemetry_data = truck_telemetry.get_data()
 
-                if lastData == str(data):
+                if lastData == str(self.telemetry_data):
                     write_log("No data change detected.")
                 else:
-                    write_log("Data change detected.")
-                    lastData = str(data)
+                    lastData = str(self.telemetry_data)
                     # ON SAIT QUE LES DONNES SONT MISES A JOUR
-                    if data["game"] == 1:
-                        self.update_game_status("Euro Truck Simulator 2")
-                    elif data["game"] == 2:
-                        self.update_game_status("American Truck Simulator")
+                    if self.telemetry_data["game"] == 1:
+                        self.game_status.configure(text="Euro Truck Simulator 2", text_color="green")
+                    elif self.telemetry_data["game"] == 2:
+                        self.game_status.configure(text="American Truck Simulator", text_color="green")
 
-                    write_log("Deliveries object ready")
-                    event_type = deliveries.handle(data)
-                    write_log("Deliveries handled")
+                    event_type = deliveries.handle(self.telemetry_data)
 
                     if event_type == "job_started":
                         self.game_notif("Delivery in progress. Drive safe!", delay=5000)
                     elif event_type == "job_delivered":
                         self.game_notif("Delivery completed. Good job!", delay=5000)
                     elif event_type == "job_cancelled":
-                        self.game_notif("Delivery cancelled. Another \ndriver got the freight away.", delay=5000)
+                        self.game_notif("Delivery cancelled. Another \ncompany got the freight away.", delay=5000)
                     
-
-            except (FileNotFoundError, AttributeError) as sdk_err:
-                self.stop_tracking()
-                self.show_error("Tracking disabled due to SDK disconnection.")
-                write_log(f"[SDK Error] {sdk_err}", type="error")
-                break
-
             except Exception as outer:
                 write_log(f"[Thread crash] {outer}", type="error")
-                self.show_error("Tracking stopped unexpectedly.")
+                error_txt = "Tracking stopped unexpectedly, probably because the game was closed."
+                self.show_error(error_txt)
+                write_log(error_txt, type="error")
                 self.stop_tracking()
                 break
 
             time.sleep(3)
+
 
 
     def start_tracking(self):
@@ -213,35 +218,105 @@ class MainWindow(ctk.CTk):
             self.stop_event.clear()
             self.sdk_thread = threading.Thread(target=self.run_sdk_loop, daemon=True)
             self.sdk_thread.start()
-            self.tracking_button.configure(text="Stop tracking", command=self.stop_tracking)
+            self.tracking_button.configure(text="Stop tracking", command=self.stop_tracking, fg_color="darkred", hover_color="#670000")
+            write_log("Tracking started")
+
+            # UPDATE LIVE DRIVERS
+            game = ""
+            user_data = load_json(resource_path("data/user.json"))
+            userID = user_data["id"]
+            if self.telemetry_data["game"] == 1:
+                game = "ETS2"
+            elif self.telemetry_data["game"] == 2:
+                game = "ATS"
+
+            payload = {"id": userID, "game": game}
+            req = requests.post(f"{API_URL}/tracker/user/live/add", json=payload)
+            # result = req.json()
+            # if result["error"]:
+            #     write_log(result["message"], type="error")
+
         except FileNotFoundError:
             self.show_error("Unable to load the SDK. Either the game is not running or the SDK plugin is not installed.")
             write_log("SDK init failed: FileNotFoundError", type="error")
 
 
+
     def stop_tracking(self):
         self.stop_event.set()
         truck_telemetry.deinit()
-        self.tracking_button.configure(text="Start tracking", command=self.start_tracking)
-        self.game_status_label.configure(text="Tracking is disabled", text_color="red")
-        self.game_status_label.update()
+        self.tracking_button.configure(text="Start tracking", command=self.start_tracking, fg_color="#003F3F", hover_color="#003737")
+        self.game_status.configure(text="No game running.", text_color="grey")
+        self.game_status.update()
         write_log("Tracking stopped cleanly")
 
+        # UPDATE LIVE DRIVERS
+        user_data = load_json(resource_path("data/user.json"))
+        userID = user_data["id"]
+
+        payload = {"id": userID}
+        req = requests.delete(f"{API_URL}/tracker/user/live/remove", json=payload)
+        # result = req.json()
+        # if result["error"]:
+        #     write_log(result["message"], type="error")
 
     
+
+    def update_live_drivers(self):
+        while True:
+            req = requests.get(f"{API_URL}/tracker/user/live")
+            response = req.json()
+
+            if response["error"]:
+                write_log(response["message"], type="error")
+            else:
+                # ETS2
+                ets2_players = response["ets2"]
+                if ets2_players == []:
+                    self.online_ets2_players.configure(text="Nobody is online.", font=("Poppins", 10, "italic"), text_color="grey")
+                    self.online_ets2_players.update()
+                else:
+                    display_txt = ""
+                    for player_name in ets2_players:
+                        display_txt += f"{player_name}\n"
+                    self.online_ets2_players.configure(text=display_txt, font=("Poppins", 10, "bold"), text_color="white")
+                    self.online_ets2_players.update()
+                # ATS
+                ats_players = response["ats"]
+                if ats_players == []:
+                    self.online_ats_players.configure(text="Nobody is online.", font=("Poppins", 10, "italic"), text_color="grey")
+                    self.online_ats_players.update()
+                else:
+                    display_txt = ""
+                    for player_name in ats_players:
+                        display_txt += f"{player_name}\n"
+                    self.online_ats_players.configure(text=display_txt, font=("Poppins", 10, "bold"), text_color="white")
+                    self.online_ats_players.update()
+
+            time.sleep(15)
+
+    
+
     ### UI SETUP
     def setup_ui(self):
         # WELCOME & VERSION LABELS
         self.welcome_label = ctk.CTkLabel(self, text=f'Welcome, {self.user_data["username"]}!', font=("Poppins", 20, "italic"))
         self.welcome_label.pack(pady=10)
-        self.version_label = ctk.CTkLabel(master=self, text="version 05-05-2025", text_color="gray")
+        self.version_label = ctk.CTkLabel(master=self, text="version 09-05-2025", text_color="gray")
         self.version_label.place(relx=0.01, rely=1.0, anchor="sw")  # En bas à gauche
 
         ## TAB VIEW
         self.tabview = ctk.CTkTabview(self, width=580, height=360)
         self.tabview.pack(padx=10, pady=10, fill="both", expand=True)
+
         self.tabview.add("Home")
+        self.infos_warning_label = ctk.CTkLabel(self.tabview.tab("Home"), text="ⓘ  Informations displayed on this page are updated every 15 seconds.", text_color="grey", font=("Poppins", 10, "bold"))
+        self.infos_warning_label.pack(pady=2)
+        self.game_status = ctk.CTkLabel(self.tabview.tab("Home"), text="No game running.", text_color="grey", font=("Poppins", 13, "italic"))
+        self.game_status.pack(pady=2, padx=2)
+
         self.tabview.add("Settings")
+
         self.tabview.add("Infos")
 
 
@@ -251,7 +326,7 @@ class MainWindow(ctk.CTk):
             self.tabview.tab("Home"),
             width=280,
             height=300,
-            fg_color="#303030",  # gris foncé
+            fg_color="#282828",  # gris foncé
             corner_radius=10
         )
         self.frame_left_home.pack(side="left", fill="both", expand=True, padx=(20, 10), pady=10)
@@ -261,21 +336,37 @@ class MainWindow(ctk.CTk):
             self.tabview.tab("Home"),
             width=280,
             height=300,
-            fg_color="#303030",
+            fg_color="#282828",
             corner_radius=10
         )
         self.frame_right_home.pack(side="right", fill="both", expand=True, padx=(10, 20), pady=10)
 
-        # LEFT FRAME CONTENTS
+        ## LEFT FRAME CONTENTS
         self.user_profile = ui.UserProfile(self.frame_left_home)
         self.user_profile.pack(pady=20)
 
-        # RIGHT FRAME CONTENTS
-        self.game_status_label = ctk.CTkLabel(self.frame_right_home, text="Tracking is disabled", font=("Arial", 14), text_color="red")
-        self.game_status_label.pack(pady=5)
+        ## RIGHT FRAME CONTENTS
+        # Online Drivers
+        self.online_ets2_label = ctk.CTkLabel(self.frame_right_home, text="ONLINE - ETS2", font=("Poppins", 10, "italic"), text_color="green")
+        self.online_ets2_label.pack(pady=2)
+        self.online_ets2_players = ctk.CTkLabel(self.frame_right_home, text="Nobody is online.", font=("Poppins", 10, "italic"), text_color="grey")
+        self.online_ets2_players.pack(pady=2)
+        self.online_ats_label = ctk.CTkLabel(self.frame_right_home, text="ONLINE - ATS", font=("Poppins", 10, "italic"), text_color="green")
+        self.online_ats_label.pack(pady=2)
+        self.online_ats_players = ctk.CTkLabel(self.frame_right_home, text="Nobody is online.", font=("Poppins", 10, "italic"), text_color="grey")
+        self.online_ats_players.pack(pady=2)
 
-        self.tracking_button = ctk.CTkButton(self.frame_right_home, text="Start tracking", command=self.start_tracking)
+        self.live_drivers_loop = threading.Thread(target=self.update_live_drivers, daemon=True)
+        self.live_drivers_loop.start()
+
+        # SEPARATION BAR
+        self.horizontal_bar = ctk.CTkFrame(self.frame_right_home, height=3, width=150, corner_radius=0)
+        self.horizontal_bar.pack(padx=5, pady=5)
+
+        # Tracking Control
+        self.tracking_button = ctk.CTkButton(self.frame_right_home, text="Start tracking", command=self.start_tracking, fg_color="#003F3F", hover_color="#003737")
         self.tracking_button.pack(pady=10)
+
 
         # BOUTON DE TEST POUR L'AFFICHAGE DES DONNES DU SDK
         #self.test_button = ctk.CTkButton(self, text="Print game data", command=self.print_game_data)
@@ -286,13 +377,13 @@ class MainWindow(ctk.CTk):
         self.settings_page = ui.SettingsPage(self.tabview.tab("Settings"))
         self.settings_page.pack(pady=20)
 
-        ## SETTINGS TAB
-        self.settings_page = ui.InfosPage(self.tabview.tab("Infos"))
-        self.settings_page.pack(pady=20)
+        ## INFOS TAB
+        self.infos_page = ui.InfosPage(self.tabview.tab("Infos"))
+        self.infos_page.pack(pady=20)
 
 
 
 if __name__ == "__main__":
-    app = LoginWindow()
+    app = MainWindow()
     app.mainloop()
 

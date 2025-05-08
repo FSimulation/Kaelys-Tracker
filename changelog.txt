@@ -1,4 +1,0 @@
-= VERSION 07-05-2025 =
-Completed Home section with Profile and Statistics informations (work in progress)
-Added Settings section (work in progress)
-Added changelog in Infos section
