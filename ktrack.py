@@ -2,7 +2,7 @@ import customtkinter as ctk, requests, threading, time, ctypes
 from truck_telemetry import truck_telemetry
 from PIL import Image
 from src.components.tracking.deliveries import Deliveries
-from src.components.pretools import save_json, load_json, resource_path, write_log
+from src.components.pretools import save_json, load_json, resource_path, write_log, save_txt
 import src.components.operations.ui as ui
 
 
@@ -320,6 +320,7 @@ class MainWindow(ctk.CTk):
 
         self.tabview.add("Infos")
 
+        self.tabview._segmented_button.configure(command=self.on_tab_changed)
 
         ### HOME TAB
         ## LEFT FRAME
@@ -383,8 +384,14 @@ class MainWindow(ctk.CTk):
         self.infos_page.pack(pady=20)
 
 
+    def on_tab_changed(self, selected_tab: str):
+        write_log(f"Switched to {selected_tab} tab")
+
+
 
 if __name__ == "__main__":
+    save_txt("", resource_path("logs.txt"))
+    save_txt("", resource_path("crash.txt"))
     app = LoginWindow()
     app.mainloop()
 

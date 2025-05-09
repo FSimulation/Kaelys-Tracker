@@ -953,3 +953,30 @@ INFO: Application closed cleanly
 INFO: Tracking started
 INFO: Tracking stopped cleanly
 INFO: Application closed cleanly
+INFO: Login button clicked
+INFO: {'error': False, 'user': {'id': 176103, 'username': 'FSimulation', 'steamID64': 76561198891245889, 'discordID': 1038719463358484510}}
+INFO: Tracking stopped cleanly
+INFO: Application closed cleanly
+INFO: Login button clicked
+INFO: {'error': False, 'user': {'id': 176103, 'username': 'FSimulation', 'steamID64': 76561198891245889, 'discordID': 1038719463358484510}}
+INFO: Tracking stopped cleanly
+INFO: Application closed cleanly
+INFO: Login button clicked
+INFO: {'error': False, 'user': {'id': 176103, 'username': 'FSimulation', 'steamID64': 76561198891245889, 'discordID': 1038719463358484510}}
+INFO: Tracking stopped cleanly
+INFO: Application closed cleanly
+INFO: Login button clicked
+INFO: {'error': False, 'user': {'id': 176103, 'username': 'FSimulation', 'steamID64': 76561198891245889, 'discordID': 1038719463358484510}}
+INFO: Switched to Settings tab
+INFO: Switched to Infos tab
+INFO: Switched to Settings tab
+INFO: Switched to Home tab
+INFO: Switched to Infos tab
+INFO: Switched to Home tab
+INFO: Switched to Settings tab
+INFO: Switched to Home tab
+INFO: Switched to Settings tab
+INFO: Switched to Home tab
+INFO: Switched to Infos tab
+INFO: Tracking stopped cleanly
+INFO: Application closed cleanly
