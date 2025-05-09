@@ -1,7 +1,23 @@
+# Fichiers temporaires et de test
 test.py
 test.json
 crash.txt
 logs.txt
+
+# Environnements virtuels
+.venv/
+
+# Dossiers de build (Python packaging)
 build/
 dist/
-.venv
+
+# Fichiers spécifiques à PyInstaller (optionnel si tu l'utilises)
+*.spec
+
+# Cache Python
+__pycache__/
+*.py[cod]
+
+# Fichiers système (souvent inutiles dans un repo)
+.DS_Store
+Thumbs.db
