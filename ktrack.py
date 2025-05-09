@@ -384,6 +384,6 @@ class MainWindow(ctk.CTk):
 
 
 if __name__ == "__main__":
-    app = MainWindow()
+    app = LoginWindow()
     app.mainloop()
 
