@@ -1,7 +1,7 @@
 test.py
 test.json
+crash.txt
+logs.txt
 build/
 dist/
 .venv
-crash.txt
-logs.txt
