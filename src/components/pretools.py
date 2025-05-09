@@ -53,6 +53,8 @@ def write_log(message: str, type: str = "info"):
     """
     Write a log message to the console and a log file.
     """
+    now = datetime.now()
+    now_str = now.strftime("%H:%M:%S") # Format time and date for proper logging
     if type == "info":
         file = resource_path("logs.txt")
     elif type == "error":
@@ -65,7 +67,7 @@ def write_log(message: str, type: str = "info"):
     except FileNotFoundError:
         save_txt(f"{type.upper()}: {message}\n", file)
 
-    print(f"{type.upper()}: {message}")
+    print(f"[{now_str}] | {type.upper()}: {message}")
 
 
 def convert_game_time(iso_str: str):

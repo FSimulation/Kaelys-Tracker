@@ -57,7 +57,7 @@ class LoginWindow(ctk.CTk):
         self.password = ctk.CTkEntry(self, placeholder_text="Password", show="*")
         self.password.pack(pady=10)
 
-        self.login_button = ctk.CTkButton(self, text="Go!", command=self.login)
+        self.login_button = ctk.CTkButton(self, text="Go!", command=lambda: [write_log("Login button clicked"), self.login()])
         self.login_button.pack(pady=10)
 
 
@@ -73,20 +73,20 @@ class LoginWindow(ctk.CTk):
             data = response.json()
 
             if data["error"]:
-                print(data["message"])
+                write_log(data["message"], type="error")
                 error_label = ctk.CTkLabel(self, text=data["message"], text_color="red")
                 error_label.pack(pady=5)
                 self.login_button.configure(text="Go!")
                 self.login_button.update()
             else:
-                print(data)
+                write_log(data, type="info")
                 user_data = data["user"]
                 save_json(user_data, resource_path("data/user.json"))
                 self.destroy()
                 self.main_window = MainWindow()
                 self.main_window.mainloop()
         else:
-            print("Error: Unable to connect to the server.")
+            write_log("Error: Unable to connect to the server.", type="error")
             error_label = ctk.CTkLabel(self, text="Unable to connect to the server.", text_color="red")
             error_label.pack(pady=5)
             self.login_button.configure(text="Go!")
@@ -286,6 +286,7 @@ class MainWindow(ctk.CTk):
                 if ats_players == []:
                     self.online_ats_players.configure(text="Nobody is online.", font=("Poppins", 10, "italic"), text_color="grey")
                     self.online_ats_players.update()
+                    
                 else:
                     display_txt = ""
                     for player_name in ats_players:
