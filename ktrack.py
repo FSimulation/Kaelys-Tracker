@@ -4,6 +4,7 @@ from PIL import Image
 from src.components.tracking.deliveries import Deliveries
 from src.components.pretools import save_json, load_json, resource_path, write_log, save_txt
 import src.components.operations.ui as ui
+import src.components.operations.discord_integ as dinteg
 
 
 lastData = {}
@@ -103,8 +104,6 @@ class MainWindow(ctk.CTk):
         ctk.set_appearance_mode("Dark")
         ctk.set_default_color_theme(resource_path("src/theme.json"))
         self.user_data = load_json(resource_path("data/user.json"))
-        self.stop_event = threading.Event()
-        self.stop_event.set()
         self.resizable(False, False)
         self.protocol("WM_DELETE_WINDOW", lambda: None)
 
@@ -113,6 +112,13 @@ class MainWindow(ctk.CTk):
         self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
         self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
 
+        self.stop_event = threading.Event()
+        self.stop_event.set()
+
+        self.rpc = dinteg.RichPresence()
+        self.rpc_thread = threading.Thread(target=self.rpc.run_loop, daemon=True)
+        self.rpc_thread.start()
+
         self.setup_ui()
 
 
@@ -120,6 +126,7 @@ class MainWindow(ctk.CTk):
     ### CLOSE APP
     def on_close(self):
         self.stop_tracking()
+        self.rpc.stop()
         time.sleep(0.5)
         write_log("Application closed cleanly")
         self.destroy()
@@ -166,7 +173,7 @@ class MainWindow(ctk.CTk):
         ctk.CTkLabel(notif, text=message, font=ctk.CTkFont(size=15, weight="bold")).pack(pady=2)
 
         notif.after(delay, notif.destroy)
-    
+
 
 
     def run_sdk_loop(self):
@@ -205,7 +212,7 @@ class MainWindow(ctk.CTk):
                 break
 
             time.sleep(3)
-
+    
 
 
     def start_tracking(self):
@@ -387,6 +394,6 @@ class MainWindow(ctk.CTk):
 if __name__ == "__main__":
     save_txt("", resource_path("logs.txt"))
     save_txt("", resource_path("crash.txt"))
-    app = LoginWindow()
+    app = MainWindow()
     app.mainloop()
 

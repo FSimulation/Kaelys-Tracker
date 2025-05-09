@@ -1,0 +1,4 @@
+customtkinter
+requests
+truck_telemetry
+pypresence
