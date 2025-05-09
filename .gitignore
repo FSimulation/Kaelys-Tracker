@@ -3,3 +3,5 @@ test.json
 build/
 dist/
 .venv
+crash.txt
+logs.txt
