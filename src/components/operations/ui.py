@@ -1,9 +1,11 @@
 import requests, customtkinter as ctk, threading, time
-from PIL import Image
+from PIL import Image, ImageTk
 from truck_telemetry import truck_telemetry
 from ktrack import API_URL
 from src.components.pretools import write_log, load_json, resource_path, load_txt
 from src.components.tracking.deliveries import Deliveries
+from io import BytesIO
+
 
 
 lastData = {}
@@ -158,6 +160,12 @@ class UserProfile(ctk.CTkFrame):
                     self.deliveries_total_value.configure(text=f"{pick['deliveriesTotal']}")
                     self.wallet_value.configure(text=f"{pick['wallet']}")
                     self.rank_value.configure(text=f"{pick['rank']}")
+                    
+                    image_response = requests.get(pick["avatarURL"])
+                    image = Image.open(BytesIO(image_response.content))
+                    self.tk_image = ImageTk.PhotoImage(image)
+                    self.profile_image.configure(light_image=self.tk_image, dark_image=self.tk_image)
+                    # self.profile_image.update()
         
             except requests.RequestException as e:
                 write_log(f"Error fetching user info: {e}", type="error")
