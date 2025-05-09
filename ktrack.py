@@ -320,8 +320,6 @@ class MainWindow(ctk.CTk):
 
         self.tabview.add("Infos")
 
-        self.tabview._segmented_button.configure(command=self.on_tab_changed)
-
         ### HOME TAB
         ## LEFT FRAME
         self.frame_left_home = ctk.CTkFrame(
@@ -383,9 +381,6 @@ class MainWindow(ctk.CTk):
         self.infos_page = ui.InfosPage(self.tabview.tab("Infos"))
         self.infos_page.pack(pady=20)
 
-
-    def on_tab_changed(self, selected_tab: str):
-        write_log(f"Switched to {selected_tab} tab")
 
 
 
