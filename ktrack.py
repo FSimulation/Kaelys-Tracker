@@ -394,6 +394,6 @@ class MainWindow(ctk.CTk):
 if __name__ == "__main__":
     save_txt("", resource_path("logs.txt"))
     save_txt("", resource_path("crash.txt"))
-    app = MainWindow()
+    app = LoginWindow()
     app.mainloop()
 
