@@ -62,10 +62,10 @@ def write_log(message: str, type: str = "info"):
     
     try:
         text = load_txt(file)
-        text += f"{type.upper()}: {message}\n"
+        text += f"[{now_str}] | {type.upper()}: {message}\n"
         save_txt(text, file)
     except FileNotFoundError:
-        save_txt(f"{type.upper()}: {message}\n", file)
+        save_txt(f"[{now_str}] | {type.upper()}: {message}\n", file)
 
     print(f"[{now_str}] | {type.upper()}: {message}")
 
