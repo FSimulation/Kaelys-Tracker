@@ -1,9 +1,7 @@
 import requests, customtkinter as ctk, threading, time
-from PIL import Image, ImageTk
-from truck_telemetry import truck_telemetry
+from PIL import Image
 from ktrack import API_URL
 from src.components.pretools import write_log, load_json, resource_path, load_txt
-from src.components.tracking.deliveries import Deliveries
 from io import BytesIO
 
 
@@ -31,12 +29,18 @@ class UserProfile(ctk.CTkFrame):
     """
     def __init__(self, master=None, *args, **kwargs):
         super().__init__(master, fg_color="transparent", *args, **kwargs)
+        self.previous_pick = None # For user data pick in update_user_loop
 
 
         ### TOP FRAME
         self.top_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.top_frame.pack(pady=10)
+        self.top_frame.pack(pady=0.5)
 
+        # LOADING LABEL
+        self.loading_label = ctk.CTkLabel(self.top_frame, text="Loading profile...", font=("Poppins", 10, "bold"), text_color="grey")
+        self.loading_label.pack(padx=0.5)
+
+        # PROFILE LABEL
         self.profile_label = ctk.CTkLabel(self.top_frame, text="Profile", font=("Poppins", 20, "italic"))
         self.profile_label.pack(pady=10)
 
@@ -154,23 +158,30 @@ class UserProfile(ctk.CTkFrame):
                     write_log(f"Error fetching user info: {data['message']}", type="error")
                     return
                 else:
-                    pick = data["user"]
-                    self.user_id_label.configure(text=f"Your ID: {pick['id']}", font=("Poppins", 12, "bold"))
-                    self.user_discordID_label.configure(text=f"Your Discord ID: {pick['discordID']}", font=("Poppins", 12, "bold"))
-                    self.deliveries_total_value.configure(text=f"{pick['deliveriesTotal']}")
-                    self.wallet_value.configure(text=f"{pick['wallet']}")
-                    self.rank_value.configure(text=f"{pick['rank']}")
-                    
-                    image_response = requests.get(pick["avatarURL"])
-                    image = Image.open(BytesIO(image_response.content))
-                    self.tk_image = ImageTk.PhotoImage(image)
-                    self.profile_image.configure(light_image=self.tk_image, dark_image=self.tk_image)
-                    # self.profile_image.update()
+                    if not self.previous_pick or self.pick != self.previous_pick:
+                        write_log("Loading profile...")
+                        self.pick = data["user"]
+                        self.user_id_label.configure(text=f"Your ID: {self.pick['id']}", font=("Poppins", 12, "bold"))
+                        self.user_discordID_label.configure(text=f"Your Discord ID: {self.pick['discordID']}", font=("Poppins", 12, "bold"))
+                        self.deliveries_total_value.configure(text=f"{self.pick['deliveriesTotal']}")
+                        self.wallet_value.configure(text=f"{self.pick['wallet']}")
+                        self.rank_value.configure(text=f"{self.pick['rank']}")
+
+                        image_response = requests.get(self.pick["avatarURL"])
+                        image = Image.open(BytesIO(image_response.content))
+                        ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(100, 100))
+                        self.pfp_label.configure(image=ctk_image)
+                        self.pfp_label.update()
+                        write_log("Profile loaded from API request")
+
+                        self.previous_pick = self.pick
         
             except requests.RequestException as e:
                 write_log(f"Error fetching user info: {e}", type="error")
                 return None
             
+            if self.loading_label.winfo_exists():
+                self.loading_label.destroy()
             time.sleep(15)  # Update every 30 seconds
 
 
