@@ -231,20 +231,27 @@ class SettingsPage(ctk.CTkFrame):
         # === COLUMNS CONFIGS ===
         # Column 1
         self.column_1 = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        self.column_1.pack(side="left", padx=20)
+        self.column_1.grid(row=0, column=0, padx=20, pady=10, sticky="nsew")
 
         # Column 2
         self.column_2 = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        self.column_2.pack(side="left", padx=20)
+        self.column_2.grid(row=0, column=1, padx=20, pady=10, sticky="nsew")
 
         # Column 3
         self.column_3 = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        self.column_3.pack(side="left", padx=20)
+        self.column_3.grid(row=0, column=2, padx=20, pady=10, sticky="nsew")
+
+        # Configure grid weights for responsiveness
+        self.main_frame.grid_columnconfigure(0, weight=1)
+        self.main_frame.grid_columnconfigure(1, weight=1)
+        self.main_frame.grid_columnconfigure(2, weight=1)
+        self.main_frame.grid_rowconfigure(0, weight=1)
+
 
 
         # === COLUMNS CONTENTS ===
         # Column 1
-        self.job_notif_label = ctk.CTkLabel(self.column_1, text="Job Notifications (disabled)", font=("Poppins", 16, "bold"))
+        self.job_notif_label = ctk.CTkLabel(self.column_1, text="Job Notifications", font=("Poppins", 16, "bold", "overstrike"))
         self.job_notif_label.pack(pady=5, padx=10)
         self.job_notif_select = ctk.CTkOptionMenu(
             self.column_1,
@@ -281,6 +288,40 @@ class SettingsPage(ctk.CTkFrame):
     #         except Exception as e:
     #             write_log(f"Something went wrong with exporting jobs: {e}", type="error")
 
+        #Column 3
+        self.show_hotkeys_label = ctk.CTkLabel(self.column_3, text="Show hotkeys", font=("Poppins", 16, "bold"))
+        self.show_hotkeys_label.pack(pady=5, padx=10)
+
+        self.show_hotkeys_button = ctk.CTkButton(self.column_3, text="Show hotkeys", font=("Poppins", 16), command=lambda: [write_log("Opening hotkeys window...", self.hotkeys_window())])
+        self.show_hotkeys_button.pack(pady=5, padx=10)
+
+    def hotkeys_window(self):
+        infos = self.load_infos()
+
+        hotkeys_window = ctk.CTkToplevel()
+        hotkeys_window.geometry("400x200")
+        hotkeys_window.title("Hotkeys")
+        hotkeys_window.resizable(False, False)
+
+        self.hotkeys_frame = ctk.CTkScrollableFrame(hotkeys_window, fg_color="#1B1B1B", orientation='vertical')
+        self.hotkeys_frame.pack(pady=5, padx=10, fill="x")
+
+        self.hotkeys_heading = ctk.CTkLabel(self.hotkeys_frame, text="📻Hotkeys for CB", font=("Poppins", 20, "bold"))
+        self.hotkeys_heading.pack(pady=5, padx=10)
+
+        self.hotkeys_label = ctk.CTkLabel(self.hotkeys_frame, text="\n".join(f"> {hotkey}" for hotkey in infos['hotkeys']), font=("Poppins", 16), wraplength=550, justify="left", anchor="w")
+        self.hotkeys_label.pack(pady=5, padx=10, fill="x", expand=True)
+        self.close_button = ctk.CTkButton(self.hotkeys_frame, text="Close", command=hotkeys_window.destroy).pack(pady=10)
+
+        hotkeys_window.grab_set()
+
+    def load_infos(self):
+        """
+        Load the changelog from local.
+        """
+        with open(resource_path("properties/infos.json"), 'r') as f:
+            infos = json.load(f)
+        return infos
             
 
 
@@ -350,4 +391,5 @@ class InfosPage(ctk.CTkFrame):
         """
         with open(resource_path("properties/infos.json"), 'r') as f:
             infos = json.load(f)
-        return infos 
+        return infos
+
