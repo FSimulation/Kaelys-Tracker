@@ -5,6 +5,7 @@ from src.components.tracking.deliveries import Deliveries
 from src.components.pretools import save_json, load_json, resource_path, write_log, save_txt
 import src.components.operations.ui as ui
 import src.components.operations.discord_integ as dinteg
+import keyboard
 
 
 lastData = {}
@@ -60,6 +61,7 @@ class LoginWindow(ctk.CTk):
 
         self.login_button = ctk.CTkButton(self, text="Go!", command=lambda: [write_log("Login button clicked"), self.login()])
         self.login_button.pack(pady=10)
+
 
 
     def login(self):
@@ -120,6 +122,9 @@ class MainWindow(ctk.CTk):
         self.rpc_thread.start()
 
         self.setup_ui()
+
+        self.start_key_listener()
+
 
 
 
@@ -303,7 +308,52 @@ class MainWindow(ctk.CTk):
 
             time.sleep(15)
 
-    
+    def handle_cb_event(self, type, message):
+        try:
+            requests.post(f"{API_URL}/hub/cbevent", json={
+                "type": type,
+                "message": message,
+                "discordID": self.user_data["discordID"]
+                })
+            write_log(f"Event Submitted: {type} - {message}")
+        except Exception as e:
+            write_log(f"POST Failed (Events): {e}", type="error")
+        except requests.RequestException as e:
+            write_log(f"POST EXCEPTION - Failed to POST to API: {e}")
+
+    def start_key_listener(self):
+        def on_key(event):
+            if event.event_type != 'down':
+                return
+
+            keys_down = keyboard._pressed_events
+            now = time.strftime("%d-%m | %H:%M:%S")
+
+            # Check if Ctrl key (29) is pressed
+            if 29 not in keys_down:
+                return
+
+            # Ctrl + number keys 1-9
+            if 2 in keys_down:  # Ctrl + 1
+                self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} started driving.")
+            elif 3 in keys_down:  # Ctrl + 2
+                self.handle_cb_event("Stop", f"[{now}] | {self.user_data['username']} stopped for fuel.")
+            elif 4 in keys_down:  # Ctrl + 3
+                self.handle_cb_event("Road Event", f"[{now}] | {self.user_data['username']} got into an accident.")
+            elif 5 in keys_down:  # Ctrl + 4
+                self.handle_cb_event("Road Event", f"[{now}] | {self.user_data['username']} is taking a detour.")
+            elif 6 in keys_down:  # Ctrl + 5
+                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} started a job.")
+            elif 7 in keys_down:  # Ctrl + 6
+                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} ended a job.")
+            elif 8 in keys_down:  # Ctrl + 7
+                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} cancelled a job")
+            elif 9 in keys_down:  # Ctrl + 8
+                self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} took an 8h break.")
+            elif 10 in keys_down:  # Ctrl + 9
+                self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} stopped driving.")
+
+        threading.Thread(target=lambda: keyboard.hook(on_key), daemon=True).start()
 
     ### UI SETUP
     def setup_ui(self):
@@ -388,6 +438,7 @@ class MainWindow(ctk.CTk):
         self.infos_page = ui.InfosPage(self.tabview.tab("Infos"))
         self.infos_page.pack(pady=20)
 
+    
 
 
 
@@ -396,4 +447,5 @@ if __name__ == "__main__":
     save_txt("", resource_path("crash.txt"))
     app = LoginWindow()
     app.mainloop()
+    keyboard.wait('esc')
 
