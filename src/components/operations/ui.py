@@ -3,7 +3,8 @@ from PIL import Image
 from ktrack import API_URL
 from src.components.pretools import write_log, load_json, resource_path, load_txt
 from io import BytesIO
-
+from tkinter import filedialog
+import json
 
 
 lastData = {}
@@ -253,6 +254,34 @@ class SettingsPage(ctk.CTkFrame):
         )
         self.job_notif_select.pack(pady=5, padx=10)
 
+    #     #Column 2
+    #     #Add API route for this pls
+    #     self.export_jobs_label = ctk.CTkLabel(self.column_2, text="Export your jobs", font=('Poppins', 16, 'bold'))
+    #     self.export_jobs_label.pack(pady=5, padx=10)
+    #     self.export_jobs_button = ctk.CTkButton(self.column_2, text="Export jobs to JSON", command=lambda: [write_log("Export jobs to JSON button pressed", "info"), self.export_to_csv()])
+    #     self.export_jobs_button.pack(pady=5, padx=10)
+
+    # def export_to_csv(self):
+    #     file_path = filedialog.asksaveasfilename(
+    #         initialdir="%USERPROFILE%\\Documents",
+    #         defaultextension=".csv",
+    #         filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+    #     )
+    #     if file_path:
+    #         try:
+    #             with open(file_path, "w") as file:
+    #                 # Assuming `jobs_data` contains the data to export
+    #                 jobs_request = requests.get(f"{API_URL}/whatever/it/is")
+    #                 jobs_data = jobs_request.content
+    #                 with open(f'{file_path}', 'w') as f:
+    #                     f.write(jobs_data)
+    #             write_log(f"Jobs exported successfully to {file_path}", type="info")
+    #         except requests.RequestException as e:
+    #             write_log(f"Something went wrong with fetching jobs: {e}", type="error")
+    #         except Exception as e:
+    #             write_log(f"Something went wrong with exporting jobs: {e}", type="error")
+
+            
 
 
 class InfosPage(ctk.CTkFrame):
@@ -268,18 +297,57 @@ class InfosPage(ctk.CTkFrame):
 
         # === FRAME PRINCIPAL ===
         self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.main_frame.pack(pady=10)
+        self.main_frame.pack(pady=10, fill="both", expand=True)
 
+        # Get infos dictionary
+        infos = self.load_infos()
+        
+        # Version heading
+        self.infos_heading_label = ctk.CTkLabel(self.main_frame, text=infos["version"], font=('Poppins', 20, 'italic'))
+        self.infos_heading_label.pack(pady=(0, 10))
 
-        # === CHANGELOG ===
-        display = self.load_infos()
-        display.pack(pady=2, padx=2, fill="x")
+        # === HOW TO INSTALL SECTION ===
+        self.how_to_install_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
+        self.how_to_install_frame.pack(pady=5, padx=10, fill="x")
 
-    
+        self.how_to_install_heading = ctk.CTkLabel(self.how_to_install_frame, text="How to install", font=("Poppins", 20, "bold"))
+        self.how_to_install_heading.pack(pady=5, padx=10)
+
+        self.how_to_install_text = ctk.CTkLabel(self.how_to_install_frame, text=infos["how_to_install"], font=("Poppins", 16), wraplength=550, justify="left", anchor="w")
+        self.how_to_install_text.pack(pady=5, padx=10, fill="x", expand=True)
+
+        # === HOW TO USE SECTION ===
+        self.how_to_use_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
+        self.how_to_use_frame.pack(pady=5, padx=10, fill="x")
+
+        self.how_to_use_heading = ctk.CTkLabel(self.how_to_use_frame, text="How to use", font=("Poppins", 20, "bold"))
+        self.how_to_use_heading.pack(pady=5, padx=10)
+
+        self.how_to_use_text = ctk.CTkLabel(self.how_to_use_frame, text=infos["how_to_use"], font=("Poppins", 16), wraplength=550,  justify="left", anchor="w")
+        self.how_to_use_text.pack(pady=5, padx=10, fill="x", expand=True)
+
+        # === CHANGELOG SECTION ===
+        self.changelog_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
+        self.changelog_frame.pack(pady=5, padx=10, fill="x")
+
+        self.changelog_heading = ctk.CTkLabel(self.changelog_frame, text="Changelog", font=("Poppins", 20, "bold"))
+        self.changelog_heading.pack(pady=5, padx=10)
+
+        changelog_text = ""
+        if isinstance(infos["changelog"], list):
+            # Join list items with newlines if changelog is a list
+            changelog_text = "\n".join(infos["changelog"])
+        else:
+            # Use as is if it's already a string
+            changelog_text = infos["changelog"]
+            
+        self.changelog_text = ctk.CTkLabel(self.changelog_frame, text=changelog_text,font=("Poppins", 16), wraplength=600, justify="left", anchor="w")
+        self.changelog_text.pack(pady=5, padx=10, fill="x", expand=True)
+
     def load_infos(self):
         """
         Load the changelog from local.
         """
-        display_text = load_txt(resource_path("properties/readme.txt"))
-        display = ctk.CTkLabel(self.main_frame, width=300, height=300, text=display_text, anchor="w", justify="left", font=("Poppins", 12), text_color="white")
-        return display
+        with open(resource_path("properties/infos.json"), 'r') as f:
+            infos = json.load(f)
+        return infos 

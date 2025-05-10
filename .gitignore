@@ -17,6 +17,7 @@ dist/
 # Cache Python
 __pycache__/
 *.py[cod]
+*.pyc
 
 # Fichiers système (souvent inutiles dans un repo)
 .DS_Store
