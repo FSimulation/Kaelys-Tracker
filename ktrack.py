@@ -1,4 +1,4 @@
-import customtkinter as ctk, requests, threading, time, ctypes
+import customtkinter as ctk, requests, threading, time, sys
 from truck_telemetry import truck_telemetry
 from PIL import Image
 from src.components.tracking.deliveries import Deliveries
@@ -130,11 +130,16 @@ class MainWindow(ctk.CTk):
 
     ### CLOSE APP
     def on_close(self):
-        self.stop_tracking()
-        self.rpc.stop()
-        time.sleep(0.5)
-        write_log("Application closed cleanly")
-        self.destroy()
+        try:
+            self.stop_tracking()
+            self.rpc.stop()
+            time.sleep(0.5)
+            write_log("Application closed cleanly")
+            self.destroy()
+        except Exception as e:
+            write_log(f"Application closed with error: {e}", type="error")
+        sys.exit()
+
 
 
     ### OPERATIONS

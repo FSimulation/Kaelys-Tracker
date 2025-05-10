@@ -37,9 +37,6 @@ class UserProfile(ctk.CTkFrame):
         self.top_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.top_frame.pack(pady=0.5)
 
-        # LOADING LABEL
-        self.loading_label = ctk.CTkLabel(self.top_frame, text="Loading profile...", font=("Poppins", 10, "bold"), text_color="grey")
-        self.loading_label.pack(padx=0.5)
 
         # PROFILE LABEL
         self.profile_label = ctk.CTkLabel(self.top_frame, text="Profile", font=("Poppins", 20, "italic"))
@@ -181,8 +178,6 @@ class UserProfile(ctk.CTkFrame):
                 write_log(f"Error fetching user info: {e}", type="error")
                 return None
             
-            if self.loading_label.winfo_exists():
-                self.loading_label.destroy()
             time.sleep(15)  # Update every 30 seconds
 
 
@@ -289,10 +284,9 @@ class SettingsPage(ctk.CTkFrame):
     #             write_log(f"Something went wrong with exporting jobs: {e}", type="error")
 
         #Column 3
-        self.show_hotkeys_label = ctk.CTkLabel(self.column_3, text="Show hotkeys", font=("Poppins", 16, "bold"))
-        self.show_hotkeys_label.pack(pady=5, padx=10)
-
-        self.show_hotkeys_button = ctk.CTkButton(self.column_3, text="Show hotkeys", font=("Poppins", 16), command=lambda: [write_log("Opening hotkeys window...", self.hotkeys_window())])
+        self.settings_hotkeys_label = ctk.CTkLabel(self.column_3, text="")
+        self.settings_hotkeys_label.pack(pady=5, padx=10)
+        self.show_hotkeys_button = ctk.CTkButton(self.column_3, text="Show hotkeys", font=("Poppins", 16), command=self.hotkeys_window)
         self.show_hotkeys_button.pack(pady=5, padx=10)
 
     def hotkeys_window(self):
@@ -306,7 +300,7 @@ class SettingsPage(ctk.CTkFrame):
         self.hotkeys_frame = ctk.CTkScrollableFrame(hotkeys_window, fg_color="#1B1B1B", orientation='vertical')
         self.hotkeys_frame.pack(pady=5, padx=10, fill="x")
 
-        self.hotkeys_heading = ctk.CTkLabel(self.hotkeys_frame, text="📻Hotkeys for CB", font=("Poppins", 20, "bold"))
+        self.hotkeys_heading = ctk.CTkLabel(self.hotkeys_frame, text="📻 Hotkeys for CB", font=("Poppins", 20, "bold"))
         self.hotkeys_heading.pack(pady=5, padx=10)
 
         self.hotkeys_label = ctk.CTkLabel(self.hotkeys_frame, text="\n".join(f"> {hotkey}" for hotkey in infos['hotkeys']), font=("Poppins", 16), wraplength=550, justify="left", anchor="w")
