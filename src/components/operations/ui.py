@@ -1,10 +1,10 @@
-import requests, customtkinter as ctk, threading, time
+import requests, customtkinter as ctk, threading, time, json, asyncio
 from PIL import Image
-from ktrack import API_URL
-from src.components.pretools import write_log, load_json, resource_path, load_txt
 from io import BytesIO
 from tkinter import filedialog
-import json
+from ktrack import API_URL, tracking_disabled
+from src.components.pretools import write_log, load_json, resource_path, load_txt
+
 
 
 lastData = {}
@@ -173,12 +173,12 @@ class UserProfile(ctk.CTkFrame):
                         write_log("Profile loaded from API request")
 
                         self.previous_pick = self.pick
-        
-            except requests.RequestException as e:
-                write_log(f"Error fetching user info: {e}", type="error")
-                return None
             
-            time.sleep(15)  # Update every 30 seconds
+            except requests.RequestException as e:
+                write_log(f"Error fetching user info: {str(e)}", type="error")
+                return None
+                
+            time.sleep(30)  # Update every 30 seconds
 
 
 
@@ -246,48 +246,79 @@ class SettingsPage(ctk.CTkFrame):
 
         # === COLUMNS CONTENTS ===
         # Column 1
-        self.job_notif_label = ctk.CTkLabel(self.column_1, text="Job Notifications", font=("Poppins", 16, "bold", "overstrike"))
-        self.job_notif_label.pack(pady=5, padx=10)
-        self.job_notif_select = ctk.CTkOptionMenu(
-            self.column_1,
-            values=["Discord Guild", "Direct Message", "Both"],
-            command=lambda x: print(f"Job notifications set to {x}"),
-            text_color="white",
-        )
-        self.job_notif_select.pack(pady=5, padx=10)
+        # self.job_notif_label = ctk.CTkLabel(self.column_1, text="Job Notifications", font=("Poppins", 16, "bold", "overstrike"))
+        # self.job_notif_label.pack(pady=5, padx=10)
+        # self.job_notif_select = ctk.CTkOptionMenu(
+        #     self.column_1,
+        #     values=["Discord Guild", "Direct Message", "Both"],
+        #     command=lambda x: print(f"Job notifications set to {x}"),
+        #     text_color="white",
+        # )
+        # self.job_notif_select.pack(pady=5, padx=10)
 
-    #     #Column 2
-    #     #Add API route for this pls
-    #     self.export_jobs_label = ctk.CTkLabel(self.column_2, text="Export your jobs", font=('Poppins', 16, 'bold'))
-    #     self.export_jobs_label.pack(pady=5, padx=10)
-    #     self.export_jobs_button = ctk.CTkButton(self.column_2, text="Export jobs to JSON", command=lambda: [write_log("Export jobs to JSON button pressed", "info"), self.export_to_csv()])
-    #     self.export_jobs_button.pack(pady=5, padx=10)
-
-    # def export_to_csv(self):
-    #     file_path = filedialog.asksaveasfilename(
-    #         initialdir="%USERPROFILE%\\Documents",
-    #         defaultextension=".csv",
-    #         filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
-    #     )
-    #     if file_path:
-    #         try:
-    #             with open(file_path, "w") as file:
-    #                 # Assuming `jobs_data` contains the data to export
-    #                 jobs_request = requests.get(f"{API_URL}/whatever/it/is")
-    #                 jobs_data = jobs_request.content
-    #                 with open(f'{file_path}', 'w') as f:
-    #                     f.write(jobs_data)
-    #             write_log(f"Jobs exported successfully to {file_path}", type="info")
-    #         except requests.RequestException as e:
-    #             write_log(f"Something went wrong with fetching jobs: {e}", type="error")
-    #         except Exception as e:
-    #             write_log(f"Something went wrong with exporting jobs: {e}", type="error")
+        #Column 2
+        self.export_jobs_label = ctk.CTkLabel(self.column_2, text="", font=('Poppins', 10, 'italic'))
+        self.export_jobs_label.pack(pady=5, padx=10)
+        self.export_jobs_button = ctk.CTkButton(self.column_2, text="Export jobs to CSV", font=("Poppins", 12), command=lambda: [asyncio.run(self.export_to_csv())])
+        self.export_jobs_button.pack(pady=5, padx=10)
 
         #Column 3
         self.settings_hotkeys_label = ctk.CTkLabel(self.column_3, text="")
         self.settings_hotkeys_label.pack(pady=5, padx=10)
-        self.show_hotkeys_button = ctk.CTkButton(self.column_3, text="Show hotkeys", font=("Poppins", 16), command=self.hotkeys_window)
+        self.show_hotkeys_button = ctk.CTkButton(self.column_3, text="CB Hotkeys", font=("Poppins", 12), command=self.hotkeys_window)
         self.show_hotkeys_button.pack(pady=5, padx=10)
+
+
+    def show_error(self, message: str):
+        error_window = ctk.CTkToplevel()
+        error_window.geometry("300x150")
+        error_window.title("Error")
+        error_window.resizable(False, False)
+
+        ctk.CTkLabel(error_window, text="An error occured.", text_color="red", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 5))
+        ctk.CTkLabel(error_window, text=message, wraplength=250).pack(pady=5)
+        ctk.CTkButton(error_window, text="Close", command=error_window.destroy).pack(pady=10)
+
+        error_window.grab_set()
+        write_log(message, type="error")
+
+
+    async def export_to_csv(self):
+        file_path = filedialog.asksaveasfilename(
+            initialdir="%USERPROFILE%\\Documents",
+            defaultextension=".csv",
+            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")]
+        )
+
+        if file_path:
+            self.export_jobs_label.configure(text="Processing...")
+            self.export_jobs_label.update()
+            with open(file_path, "w") as file:
+                user_data = load_json(resource_path("data/user.json"))
+                userID = user_data["id"]
+
+                payload = {"id": userID}               
+                req = requests.get(f"{API_URL}/tracker/deliveries/export", json=payload)
+                    
+                if req.headers["X-Error"] == "True":
+                    write_log(req.headers["X-Error-Message"])
+                    self.export_jobs_label.configure(text="An error occured, please try again later.")
+                    self.export_jobs_label.update()
+                    await asyncio.sleep(10)
+                    self.export_jobs_label.configure(text="")
+                    self.export_jobs_label.update()
+                else:
+                    with open(f'{file_path}', 'wb') as f:
+                        f.write(req.content)
+
+                    message = f"Jobs exported successfully \nto {file_path}"
+                    write_log(message)
+                    self.export_jobs_label.configure(text=message)
+                    self.export_jobs_label.update()
+                    await asyncio.sleep(10)
+                    self.export_jobs_label.configure(text="")
+                    self.export_jobs_label.update()
+
 
     def hotkeys_window(self):
         infos = self.load_infos()
@@ -308,6 +339,7 @@ class SettingsPage(ctk.CTkFrame):
         self.close_button = ctk.CTkButton(self.hotkeys_frame, text="Close", command=hotkeys_window.destroy).pack(pady=10)
 
         hotkeys_window.grab_set()
+
 
     def load_infos(self):
         """
