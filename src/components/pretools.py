@@ -36,7 +36,7 @@ def save_txt(data, filename):
 
 
 def resource_path(relative_path):
-    """Retourne le chemin absolu vers une ressource, que ce soit en .exe ou non"""
+    """Return absolute path to a file, either the program is compiled in .EXE or not"""
     base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
     return os.path.join(base_path, relative_path)
 

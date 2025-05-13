@@ -22,7 +22,7 @@ class RichPresence:
             data = truck_telemetry.get_data()
             return data["game"]
         except (FileNotFoundError, AttributeError):
-            return "Idling"
+            return "Idle"
 
 
     def connect(self):
@@ -30,37 +30,41 @@ class RichPresence:
             self.rpc.connect()
             self.connected = True
             write_log("Connected to Discord RPC")
+        
 
 
     def update_presence(self, state):
-        self.connect()
-        game_int = self.get_game()
-        game = ""
+        try:
+            self.connect()
+            game_int = self.get_game()
+            game = ""
 
-        if game_int == 1:
-            game = "Euro Truck Simulator 2"
-            img = "ets2"
-        elif game_int == 2:
-            game = "American Truck Simulator"
-            img = "ats"
-        else:
-            game = game_int
-            img = "ktrack"
+            if game_int == 1:
+                game = "Euro Truck Simulator 2"
+                img = "ets2"
+            elif game_int == 2:
+                game = "American Truck Simulator"
+                img = "ats"
+            else:
+                game = game_int
+                img = "ktrack"
 
-        if not self.previous_game or self.previous_game != game:
-            self.rpc.update(
-                state=state,
-                details=game,
-                start=time.time(),
-                large_image=img,
-                large_text=game,
-                buttons=[
-                    {"label": "Discord Guild", "url": "https://discord.gg/C95vassuy4"},
-                    {"label": "Video Trailer", "url": "https://www.youtube.com/watch?v=BjgIGn5Wa4w"}
-                ]
-            )
-            self.previous_game = game
-            write_log("Presence updated")
+            if not self.previous_game or self.previous_game != game:
+                self.rpc.update(
+                    state=state,
+                    details=game,
+                    start=time.time(),
+                    large_image=img,
+                    large_text=game,
+                    buttons=[
+                        {"label": "Discord Guild", "url": "https://discord.gg/C95vassuy4"},
+                        {"label": "Video Trailer", "url": "https://www.youtube.com/watch?v=BjgIGn5Wa4w"}
+                    ]
+                )
+                self.previous_game = game
+                write_log("Presence updated")
+        except Exception as e:
+            write_log(f"Error encountered in RPC loop: {e}", type="error")
 
 
     def run_loop(self):

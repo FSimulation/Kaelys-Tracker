@@ -1,4 +1,4 @@
-import customtkinter as ctk, requests, threading, time, ctypes
+import customtkinter as ctk, requests, threading, time, sys
 from truck_telemetry import truck_telemetry
 from PIL import Image
 from src.components.tracking.deliveries import Deliveries
@@ -14,12 +14,15 @@ lastData = {}
 API_URL = "https://api-kaelysvirtual.onrender.com"
 
 
+tracking_disabled = True
+
+
 def game_notif(message: str, delay=5000):
     notif = ctk.CTkToplevel()
     notif.overrideredirect(True)
     notif.attributes("-topmost", True)
 
-    width, height = 250, 80
+    width, height = 250, 100
     notif.geometry(f"{width}x{height}+10+10")
 
     ctk.CTkLabel(notif, text="KaelysTrack", font=ctk.CTkFont(size=12)).pack(pady=2)
@@ -39,8 +42,23 @@ class LoginWindow(ctk.CTk):
         ctk.set_appearance_mode("Dark")
         ctk.set_default_color_theme(resource_path("src/theme.json"))
         self.resizable(False, False)
+        self.protocol("WM_DELETE_WINDOW", lambda: None)
+
+        self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, command=self.on_close, fg_color="darkred", hover_color="red")
+        self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
+        self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
+        self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
 
         self.setup_ui()
+    
+
+    def on_close(self):
+        try:
+            write_log("Application closed cleanly")
+            self.destroy()
+        except Exception as e:
+            write_log(f"Application closed with error: {e}", type="error")
+        sys.exit()
 
 
     def setup_ui(self):
@@ -117,6 +135,7 @@ class MainWindow(ctk.CTk):
         self.stop_event = threading.Event()
         self.stop_event.set()
 
+        # DISCORD RPC
         self.rpc = dinteg.RichPresence()
         self.rpc_thread = threading.Thread(target=self.rpc.run_loop, daemon=True)
         self.rpc_thread.start()
@@ -127,14 +146,20 @@ class MainWindow(ctk.CTk):
 
 
 
-
     ### CLOSE APP
     def on_close(self):
-        self.stop_tracking()
-        self.rpc.stop()
-        time.sleep(0.5)
-        write_log("Application closed cleanly")
-        self.destroy()
+        try:
+            global tracking_disabled
+            tracking_disabled = True
+            self.stop_tracking()
+            self.rpc.stop()
+            time.sleep(0.5)
+            write_log("Application closed cleanly")
+            self.destroy()
+        except Exception as e:
+            write_log(f"Application closed with error: {e}", type="error")
+        sys.exit()
+
 
 
     ### OPERATIONS
@@ -226,6 +251,8 @@ class MainWindow(ctk.CTk):
             return
 
         try:
+            global tracking_disabled
+            tracking_disabled = False
             truck_telemetry.init()
             self.stop_event.clear()
             self.sdk_thread = threading.Thread(target=self.run_sdk_loop, daemon=True)
@@ -255,6 +282,8 @@ class MainWindow(ctk.CTk):
 
 
     def stop_tracking(self):
+        global tracking_disabled
+        tracking_disabled = True
         self.stop_event.set()
         truck_telemetry.deinit()
         self.tracking_button.configure(text="Start tracking", command=self.start_tracking, fg_color="#003F3F", hover_color="#003737")
@@ -293,12 +322,12 @@ class MainWindow(ctk.CTk):
                         display_txt += f"{player_name}\n"
                     self.online_ets2_players.configure(text=display_txt, font=("Poppins", 10, "bold"), text_color="white")
                     self.online_ets2_players.update()
+
                 # ATS
                 ats_players = response["ats"]
                 if ats_players == []:
                     self.online_ats_players.configure(text="Nobody is online.", font=("Poppins", 10, "italic"), text_color="grey")
                     self.online_ats_players.update()
-                    
                 else:
                     display_txt = ""
                     for player_name in ats_players:
@@ -306,54 +335,8 @@ class MainWindow(ctk.CTk):
                     self.online_ats_players.configure(text=display_txt, font=("Poppins", 10, "bold"), text_color="white")
                     self.online_ats_players.update()
 
-            time.sleep(15)
+                time.sleep(30)
 
-    def handle_cb_event(self, type, message):
-        try:
-            requests.post(f"{API_URL}/hub/cbevent", json={
-                "type": type,
-                "message": message,
-                "discordID": self.user_data["discordID"]
-                })
-            write_log(f"Event Submitted: {type} - {message}")
-        except Exception as e:
-            write_log(f"POST Failed (Events): {e}", type="error")
-        except requests.RequestException as e:
-            write_log(f"POST EXCEPTION - Failed to POST to API: {e}")
-
-    def start_key_listener(self):
-        def on_key(event):
-            if event.event_type != 'down':
-                return
-
-            keys_down = keyboard._pressed_events
-            now = time.strftime("%d-%m | %H:%M:%S")
-
-            # Check if Ctrl key (29) is pressed
-            if 29 not in keys_down:
-                return
-
-            # Ctrl + number keys 1-9
-            if 2 in keys_down:  # Ctrl + 1
-                self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} started driving.")
-            elif 3 in keys_down:  # Ctrl + 2
-                self.handle_cb_event("Stop", f"[{now}] | {self.user_data['username']} stopped for fuel.")
-            elif 4 in keys_down:  # Ctrl + 3
-                self.handle_cb_event("Road Event", f"[{now}] | {self.user_data['username']} got into an accident.")
-            elif 5 in keys_down:  # Ctrl + 4
-                self.handle_cb_event("Road Event", f"[{now}] | {self.user_data['username']} is taking a detour.")
-            elif 6 in keys_down:  # Ctrl + 5
-                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} started a job.")
-            elif 7 in keys_down:  # Ctrl + 6
-                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} ended a job.")
-            elif 8 in keys_down:  # Ctrl + 7
-                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} cancelled a job")
-            elif 9 in keys_down:  # Ctrl + 8
-                self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} took an 8h break.")
-            elif 10 in keys_down:  # Ctrl + 9
-                self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} stopped driving.")
-
-        threading.Thread(target=lambda: keyboard.hook(on_key), daemon=True).start()
 
     ### UI SETUP
     def setup_ui(self):
@@ -368,7 +351,7 @@ class MainWindow(ctk.CTk):
         self.tabview.pack(padx=10, pady=10, fill="both", expand=True)
 
         self.tabview.add("Home")
-        self.infos_warning_label = ctk.CTkLabel(self.tabview.tab("Home"), text="ⓘ  Informations displayed on this page are updated every 15 seconds.", text_color="grey", font=("Poppins", 10, "bold"))
+        self.infos_warning_label = ctk.CTkLabel(self.tabview.tab("Home"), text="ⓘ  Informations displayed on this page are updated every 30 seconds.", text_color="grey", font=("Poppins", 10, "bold"))
         self.infos_warning_label.pack(pady=2)
         self.game_status = ctk.CTkLabel(self.tabview.tab("Home"), text="No game running.", text_color="grey", font=("Poppins", 13, "italic"))
         self.game_status.pack(pady=2, padx=2)
@@ -438,6 +421,63 @@ class MainWindow(ctk.CTk):
         self.infos_page = ui.InfosPage(self.tabview.tab("Infos"))
         self.infos_page.pack(pady=20)
 
+
+
+    ## EXTRA FEATURES
+    # CB EVENT
+    def handle_cb_event(self, type, message):
+        global tracking_disabled
+        if not tracking_disabled:
+            response = requests.post(f"{API_URL}/tracker/cbevent", json={
+                "type": type,
+                "message": message,
+                "discordID": self.user_data["discordID"]
+                    })
+            payload = response.json()
+
+            if payload["error"]:
+                write_log(f"Error while submitting event: {payload['message']}", type="error")
+                self.game_notif("Couldn't submit event")
+            else:
+                write_log(f"Event Submitted: {type} - {message}")
+                self.game_notif(f"Report submitted: \n{message}")
+            
+
+
+    def start_key_listener(self):
+        def on_key(event):
+            if event.event_type != 'down':
+                return
+
+            keys_down = keyboard._pressed_events
+            now = time.strftime("%d-%m | %H:%M:%S")
+
+            # Check if Ctrl key (29) is pressed
+            if 29 not in keys_down:
+                return
+
+            # Ctrl + number keys 1-9
+            if 2 in keys_down:  # Ctrl + 1
+                self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} started driving.")
+            elif 3 in keys_down:  # Ctrl + 2
+                self.handle_cb_event("Stop", f"[{now}] | {self.user_data['username']} stopped for fuel.")
+            elif 4 in keys_down:  # Ctrl + 3
+                self.handle_cb_event("Road Event", f"[{now}] | {self.user_data['username']} got into an accident.")
+            elif 5 in keys_down:  # Ctrl + 4
+                self.handle_cb_event("Road Event", f"[{now}] | {self.user_data['username']} is taking a detour.")
+            elif 6 in keys_down:  # Ctrl + 5
+                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} started a job.")
+            elif 7 in keys_down:  # Ctrl + 6
+                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} ended a job.")
+            elif 8 in keys_down:  # Ctrl + 7
+                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} cancelled a job")
+            elif 9 in keys_down:  # Ctrl + 8
+                self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} took an 8h break.")
+            elif 10 in keys_down:  # Ctrl + 9
+                self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} stopped driving.")
+
+        threading.Thread(target=lambda: keyboard.hook(on_key), daemon=True).start()
+
     
 
 
@@ -447,5 +487,5 @@ if __name__ == "__main__":
     save_txt("", resource_path("crash.txt"))
     app = LoginWindow()
     app.mainloop()
-    keyboard.wait('esc')
+    keyboard.wait('41')
 
