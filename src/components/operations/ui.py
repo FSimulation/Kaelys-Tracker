@@ -3,7 +3,9 @@ from PIL import Image
 from io import BytesIO
 from tkinter import filedialog
 from ktrack import API_URL, tracking_disabled
-from src.components.pretools import write_log, load_json, resource_path, load_txt
+from src.components.pretools import write_log, load_json, resource_path, load_txt, save_json
+from werkzeug.security import generate_password_hash
+import sys
 
 
 
@@ -256,6 +258,12 @@ class SettingsPage(ctk.CTkFrame):
         # )
         # self.job_notif_select.pack(pady=5, padx=10)
 
+        #Column 1
+        self.delete_login_label = ctk.CTkLabel(self.column_1, text="Delete local login", font=('Poppins', 10, 'italic'))
+        self.delete_login_label.pack(pady=5, padx=10)
+        self.delete_login_button = ctk.CTkButton(self.column_1, text="Delete local login", font=("Poppins", 12), command=lambda: [write_log("Logged out successfully!", type="info"), self.delete_login(), self.safe_close_app()])
+        self.delete_login_button.pack(pady=5, padx=10)
+
         #Column 2
         self.export_jobs_label = ctk.CTkLabel(self.column_2, text="", font=('Poppins', 10, 'italic'))
         self.export_jobs_label.pack(pady=5, padx=10)
@@ -302,7 +310,7 @@ class SettingsPage(ctk.CTkFrame):
                     
                 if req.headers["X-Error"] == "True":
                     write_log(req.headers["X-Error-Message"])
-                    self.export_jobs_label.configure(text="An error occured, please try again later.")
+                    self.export_jobs_label.configure(text="An error occured, please try again later.", type="error")
                     self.export_jobs_label.update()
                     await asyncio.sleep(10)
                     self.export_jobs_label.configure(text="")
@@ -348,6 +356,30 @@ class SettingsPage(ctk.CTkFrame):
         with open(resource_path("properties/infos.json"), 'r') as f:
             infos = json.load(f)
         return infos
+    
+    def delete_login(self):
+        new_data = {"id": 0,
+                    "username": "",
+                    "steamID64": 0,
+                    "discordID": 0,
+                    "encrypted_password": ""}
+        save_json(new_data, resource_path("data/user.json"))
+
+    def safe_close_app(self):
+        try:
+            global tracking_disabled
+            tracking_disabled = True
+            if hasattr(self, "stop_tracking"):
+                self.stop_tracking()
+            if hasattr(self, "rpc"):
+                self.rpc.stop()
+            time.sleep(0.5)
+            write_log("Application closed cleanly")
+            self.destroy()
+        except Exception as e:
+            write_log(f"Application closed with error: {e}", type="error")
+        sys.exit()
+
             
 
 

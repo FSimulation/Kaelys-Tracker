@@ -6,6 +6,7 @@ from src.components.pretools import save_json, load_json, resource_path, write_l
 import src.components.operations.ui as ui
 import src.components.operations.discord_integ as dinteg
 import keyboard
+from cryptography.fernet import Fernet
 
 
 lastData = {}
@@ -15,6 +16,10 @@ API_URL = "https://api-kaelysvirtual.onrender.com"
 
 
 tracking_disabled = True
+
+# Replace with your actual key
+ENCRYPTION_KEY = b'GHq79RDXt6UoVUK44gutkHQOg1zKIH50UYTrKdGkCXI=' 
+cipher = Fernet(ENCRYPTION_KEY)
 
 
 def game_notif(message: str, delay=5000):
@@ -44,12 +49,39 @@ class LoginWindow(ctk.CTk):
         self.resizable(False, False)
         self.protocol("WM_DELETE_WINDOW", lambda: None)
 
+        if self.auto_login():
+            return
+
         self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, command=self.on_close, fg_color="darkred", hover_color="red")
         self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
         self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
         self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
 
         self.setup_ui()
+
+    def auto_login(self):
+        try:
+            user_data = load_json(resource_path("data/user.json"))
+            if "encrypted_password" in user_data:
+                # Decrypt the password
+                decrypted_password = cipher.decrypt(user_data["encrypted_password"].encode()).decode()
+
+                # Try auto-login
+                response = requests.get(f"{API_URL}/tracker/login", json={
+                    "username": user_data["username"],
+                    "password": decrypted_password
+                })
+                if response.status_code == 200:
+                    data = response.json()
+                    if not data["error"]:
+                        write_log("Auto-login successful.", type="info")
+                        self.destroy()
+                        self.main_window = MainWindow()
+                        self.main_window.mainloop()
+                        return True
+        except Exception as e:
+            write_log(f"Auto-login failed: {e}", type="error")
+        return False         
     
 
     def on_close(self):
@@ -102,6 +134,11 @@ class LoginWindow(ctk.CTk):
             else:
                 write_log(data, type="info")
                 user_data = data["user"]
+
+                # Encrypt the password before saving
+                encrypted_password = cipher.encrypt(creds["password"].encode()).decode()
+                user_data["encrypted_password"] = encrypted_password
+
                 save_json(user_data, resource_path("data/user.json"))
                 self.destroy()
                 self.main_window = MainWindow()
@@ -151,7 +188,9 @@ class MainWindow(ctk.CTk):
         try:
             global tracking_disabled
             tracking_disabled = True
+            write_log("Stopping tracking...", type="info")
             self.stop_tracking()
+            write_log("Tracking stopped successfully. Stopping Discord RPC...", type="info")
             self.rpc.stop()
             time.sleep(0.5)
             write_log("Application closed cleanly")
