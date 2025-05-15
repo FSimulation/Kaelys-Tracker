@@ -2,3 +2,6 @@ customtkinter
 requests
 truck_telemetry
 pypresence
+pillow
+keyboard
+cryptography

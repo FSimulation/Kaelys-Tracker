@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 
-def save_json(data, filename):
+def save_json(data: dict, filename: str) -> None:
     """
     Save data to a JSON file.
     """
@@ -11,7 +11,7 @@ def save_json(data, filename):
         json.dump(data, f)
 
 
-def load_json(filename):
+def load_json(filename: str) -> dict:
     """
     Load data from a JSON file.
     """
@@ -19,7 +19,7 @@ def load_json(filename):
         return json.load(f)
     
 
-def load_txt(filename):
+def load_txt(filename: str) -> str:
     """
     Load data from a text file.
     """
@@ -27,7 +27,7 @@ def load_txt(filename):
         return f.read()
     
 
-def save_txt(data, filename):
+def save_txt(data: str, filename: str) -> None:
     """
     Save data to a text file.
     """
@@ -35,13 +35,13 @@ def save_txt(data, filename):
         f.write(data)
 
 
-def resource_path(relative_path):
+def resource_path(relative_path: str) -> str:
     """Return absolute path to a file, either the program is compiled in .EXE or not"""
     base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
     return os.path.join(base_path, relative_path)
 
 
-def is_server_running(host="localhost", port=25555):
+def is_server_running(host: str="localhost", port: int=25555) -> bool:
     try:
         with socket.create_connection((host, port), timeout=2):
             return True
@@ -49,7 +49,7 @@ def is_server_running(host="localhost", port=25555):
         return False
     
 
-def write_log(message: str, type: str = "info"):
+def write_log(message: str, type: str = "info") -> None:
     """
     Write a log message to the console and a log file.
     """
@@ -75,7 +75,7 @@ def convert_game_time(iso_str: str):
     return round(dt.hour + dt.minute / 60 + dt.second / 3600, 2)
 
 
-def generate_job_id(job_data):
+def generate_job_id(job_data: dict) -> int:
     signature = f"{job_data['market']}_{job_data['source_city_id']}_{job_data['destination_city_id']}_{job_data['destination_company_id']}_{job_data['cargo_definition_id']}"
     
     hash_object = hashlib.md5(signature.encode())
