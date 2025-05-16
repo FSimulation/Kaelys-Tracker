@@ -43,7 +43,7 @@ class LoginWindow(ctk.CTk):
         super().__init__()
         self.title("KaelysTrack")
         self.geometry("600x400")
-        #self.iconbitmap(resource_path("src/static/ktrack.ico"))
+        #self.iconbitmap(resource_path("src/static/ktrack.ico")) changed to self.iconphoto for better compatibility (Ln 46 and 164)
         icon_path = resource_path("src/static/ktrack.png")
         icon_image = Image.open(icon_path)
         icon_photo = ImageTk.PhotoImage(icon_image)
