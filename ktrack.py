@@ -1,6 +1,6 @@
 import customtkinter as ctk, requests, threading, time, sys
 from truck_telemetry import truck_telemetry
-from PIL import Image
+from PIL import Image, ImageTk
 from src.components.tracking.deliveries import Deliveries
 from src.components.pretools import save_json, load_json, resource_path, write_log, save_txt
 import src.components.operations.ui as ui
@@ -43,7 +43,11 @@ class LoginWindow(ctk.CTk):
         super().__init__()
         self.title("KaelysTrack")
         self.geometry("600x400")
-        self.iconbitmap(resource_path("src/static/ktrack.ico"))
+        #self.iconbitmap(resource_path("src/static/ktrack.ico"))
+        icon_path = resource_path("src/static/ktrack.png")
+        icon_image = Image.open(icon_path)
+        icon_photo = ImageTk.PhotoImage(icon_image)
+        self.iconphoto(True, icon_photo)
         ctk.set_appearance_mode("Dark")
         ctk.set_default_color_theme(resource_path("src/theme.json"))
         self.resizable(False, False)
@@ -157,7 +161,11 @@ class MainWindow(ctk.CTk):
         super().__init__()
         self.title("KaelysTrack")
         self.geometry("700x700")
-        self.iconbitmap(resource_path("src/static/ktrack.ico"))
+        #self.iconbitmap(resource_path("src/static/ktrack.ico"))
+        icon_path = resource_path("src/static/ktrack.png")
+        icon_image = Image.open(icon_path)
+        icon_photo = ImageTk.PhotoImage(icon_image)
+        self.iconphoto(False, icon_photo)
         ctk.set_appearance_mode("Dark")
         ctk.set_default_color_theme(resource_path("src/theme.json"))
         self.user_data = load_json(resource_path("data/user.json"))
