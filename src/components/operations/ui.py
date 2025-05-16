@@ -261,9 +261,9 @@ class SettingsPage(ctk.CTkFrame):
         #Column 1
         self.delete_login_frame = ctk.CTkFrame(self.column_1, fg_color="transparent")
         self.delete_login_frame.pack(pady=5, padx=10)
-        self.delete_login_label = ctk.CTkLabel(self.delete_login_frame, text="Delete local login", font=('Poppins', 10, 'italic'))
+        self.delete_login_label = ctk.CTkLabel(self.delete_login_frame, text="")
         self.delete_login_label.pack(pady=5, padx=10)
-        self.delete_login_button = ctk.CTkButton(self.delete_login_frame, text="Delete local login", font=("Poppins", 12), command=lambda: [write_log("Logged out successfully!", type="info"), self.delete_login(), self.safe_close_app()])
+        self.delete_login_button = ctk.CTkButton(self.delete_login_frame, text="Forget Login", font=("Poppins", 12), command=lambda: [write_log("Logged out successfully!", type="info"), self.delete_login(), self.safe_close_app()])
         self.delete_login_button.pack(pady=5, padx=10)
 
         #Column 2
