@@ -259,21 +259,27 @@ class SettingsPage(ctk.CTkFrame):
         # self.job_notif_select.pack(pady=5, padx=10)
 
         #Column 1
-        self.delete_login_label = ctk.CTkLabel(self.column_1, text="Delete local login", font=('Poppins', 10, 'italic'))
+        self.delete_login_frame = ctk.CTkFrame(self.column_1, fg_color="transparent")
+        self.delete_login_frame.pack(pady=5, padx=10)
+        self.delete_login_label = ctk.CTkLabel(self.delete_login_frame, text="Delete local login", font=('Poppins', 10, 'italic'))
         self.delete_login_label.pack(pady=5, padx=10)
-        self.delete_login_button = ctk.CTkButton(self.column_1, text="Delete local login", font=("Poppins", 12), command=lambda: [write_log("Logged out successfully!", type="info"), self.delete_login(), self.safe_close_app()])
+        self.delete_login_button = ctk.CTkButton(self.delete_login_frame, text="Delete local login", font=("Poppins", 12), command=lambda: [write_log("Logged out successfully!", type="info"), self.delete_login(), self.safe_close_app()])
         self.delete_login_button.pack(pady=5, padx=10)
 
         #Column 2
-        self.export_jobs_label = ctk.CTkLabel(self.column_2, text="", font=('Poppins', 10, 'italic'))
+        self.export_jobs_frame = ctk.CTkFrame(self.column_2, fg_color="transparent")
+        self.export_jobs_frame.pack(pady=5, padx=10)
+        self.export_jobs_label = ctk.CTkLabel(self.export_jobs_frame, text="", font=('Poppins', 10, 'italic'))
         self.export_jobs_label.pack(pady=5, padx=10)
-        self.export_jobs_button = ctk.CTkButton(self.column_2, text="Export jobs to CSV", font=("Poppins", 12), command=lambda: [asyncio.run(self.export_to_csv())])
+        self.export_jobs_button = ctk.CTkButton(self.export_jobs_frame, text="Export jobs to CSV", font=("Poppins", 12), command=lambda: [asyncio.run(self.export_to_csv())])
         self.export_jobs_button.pack(pady=5, padx=10)
 
         #Column 3
-        self.settings_hotkeys_label = ctk.CTkLabel(self.column_3, text="")
+        self.settings_hotkeys_frame = ctk.CTkFrame(self.column_3, fg_color="transparent")
+        self.settings_hotkeys_frame.pack(pady=5, padx=10)
+        self.settings_hotkeys_label = ctk.CTkLabel(self.settings_hotkeys_frame, text="")
         self.settings_hotkeys_label.pack(pady=5, padx=10)
-        self.show_hotkeys_button = ctk.CTkButton(self.column_3, text="CB Hotkeys", font=("Poppins", 12), command=self.hotkeys_window)
+        self.show_hotkeys_button = ctk.CTkButton(self.settings_hotkeys_frame, text="CB Hotkeys", font=("Poppins", 12), command=self.hotkeys_window)
         self.show_hotkeys_button.pack(pady=5, padx=10)
 
 
