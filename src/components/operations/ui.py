@@ -2,10 +2,11 @@ import requests, customtkinter as ctk, threading, time, json, asyncio
 from PIL import Image
 from io import BytesIO
 from tkinter import filedialog
-from ktrack import API_URL, tracking_disabled
-from src.components.pretools import write_log, load_json, resource_path, load_txt, save_json
+from ktrack import tracking_disabled
+from src.components.pretools import write_log, load_json, resource_path, load_txt, save_json, get_switch_value, load_setting, save_settings
 from werkzeug.security import generate_password_hash
 import sys
+from src.components.cfg import API_URL
 
 
 
@@ -259,15 +260,29 @@ class SettingsPage(ctk.CTkFrame):
         # self.job_notif_select.pack(pady=5, padx=10)
 
         #Column 1
-        self.delete_login_frame = ctk.CTkFrame(self.column_1, fg_color="transparent")
+        self.delete_login_frame = ctk.CTkFrame(self.column_1, fg_color="#2B2B2B")
         self.delete_login_frame.pack(pady=5, padx=10)
         self.delete_login_label = ctk.CTkLabel(self.delete_login_frame, text="")
         self.delete_login_label.pack(pady=5, padx=10)
         self.delete_login_button = ctk.CTkButton(self.delete_login_frame, text="Forget Login", font=("Poppins", 12), command=lambda: [write_log("Logged out successfully!", type="info"), self.delete_login(), self.safe_close_app()])
         self.delete_login_button.pack(pady=5, padx=10)
 
+        #Switches
+        self.switches_settings = ctk.CTkFrame(self.column_1, fg_color="#2B2B2B")
+        self.switches_settings.pack(pady=5, padx=10)
+        self.discord_rpc_switch = ctk.CTkSwitch(self.switches_settings, text="Discord RPC", onvalue=1, offvalue=0, command=lambda: [write_log(f"Discord RPC set to {get_switch_value(self.discord_rpc_switch)}", type="info"), self.discord_rpc_switch.set(get_switch_value(self.discord_rpc_switch))])
+        self.discord_rpc_switch.pack(pady=5, padx=10)
+        self.dm_notif_switch = ctk.CTkSwitch(self.switches_settings, text="DM Notifications", onvalue=1, offvalue=0, command=lambda: [write_log(f"DM Notifications set to {get_switch_value(self.dm_notif_switch)}", type="info"), self.dm_notif_switch.set(get_switch_value(self.dm_notif_switch))])
+        self.dm_notif_switch.pack(pady=5, padx=10)
+        self.save_settings_button = ctk.CTkButton(self.switches_settings, text="Save Settings", font=("Poppins", 12), command=lambda: [write_log("Settings saved successfully!", type="info"), save_settings(self.discord_rpc_switch, self.discord_rpc_switch.get()), save_settings(self.dm_notif_switch, self.dm_notif_switch.get())])
+        self.save_settings_button.pack(pady=5, padx=10)
+
+        #Set switch values
+        load_setting("RPC", self.discord_rpc_switch)
+        load_setting("DM", self.dm_notif_switch)
+
         #Column 2
-        self.export_jobs_frame = ctk.CTkFrame(self.column_2, fg_color="transparent")
+        self.export_jobs_frame = ctk.CTkFrame(self.column_2, fg_color="#2B2B2B")
         self.export_jobs_frame.pack(pady=5, padx=10)
         self.export_jobs_label = ctk.CTkLabel(self.export_jobs_frame, text="", font=('Poppins', 10, 'italic'))
         self.export_jobs_label.pack(pady=5, padx=10)
@@ -275,12 +290,14 @@ class SettingsPage(ctk.CTkFrame):
         self.export_jobs_button.pack(pady=5, padx=10)
 
         #Column 3
-        self.settings_hotkeys_frame = ctk.CTkFrame(self.column_3, fg_color="transparent")
+        self.settings_hotkeys_frame = ctk.CTkFrame(self.column_3, fg_color="#2B2B2B")
         self.settings_hotkeys_frame.pack(pady=5, padx=10)
         self.settings_hotkeys_label = ctk.CTkLabel(self.settings_hotkeys_frame, text="")
         self.settings_hotkeys_label.pack(pady=5, padx=10)
         self.show_hotkeys_button = ctk.CTkButton(self.settings_hotkeys_frame, text="CB Hotkeys", font=("Poppins", 12), command=self.hotkeys_window)
         self.show_hotkeys_button.pack(pady=5, padx=10)
+
+
 
 
     def show_error(self, message: str):

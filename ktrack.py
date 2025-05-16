@@ -2,18 +2,15 @@ import customtkinter as ctk, requests, threading, time, sys
 from truck_telemetry import truck_telemetry
 from PIL import Image, ImageTk
 from src.components.tracking.deliveries import Deliveries
-from src.components.pretools import save_json, load_json, resource_path, write_log, save_txt
+from src.components.pretools import save_json, load_json, resource_path, write_log, save_txt, load_setting
 import src.components.operations.ui as ui
 import src.components.operations.discord_integ as dinteg
+from src.components.cfg import API_URL
 import keyboard
 from cryptography.fernet import Fernet
 
 
 lastData = {}
-
-
-API_URL = "https://api-kaelysvirtual.onrender.com"
-
 
 tracking_disabled = True
 

@@ -1,5 +1,6 @@
-import json, sys, os, socket, hashlib, customtkinter as ctk
+import json, sys, os, socket, hashlib, customtkinter as ctk, requests
 from datetime import datetime
+from src.components.cfg import API_URL
 
 
 
@@ -83,4 +84,67 @@ def generate_job_id(job_data: dict) -> int:
     
     return hash_int % 1000000
 
+def get_switch_value(switch: ctk.CTkSwitch) -> bool:
+    """
+    Get the value of a CTkSwitch.
+    """
+    return True if switch.get() == 1 else False
+    
+def save_settings(setting: str, value: int) -> None:
+    """
+    Save settings to the DB thru the API.
+    """
+    user_data = load_json(resource_path("data/user.json"))
+    payload = {
+        "userID": user_data["userID"],
+        "settings": {setting: value}
+        }
+    
+    payload["settings"][setting] = value
 
+    memory = load_json(resource_path("data/memory.json"))
+    memory["settings"][setting] = value
+    save_json(memory, resource_path("data/memory.json"))
+    
+    try:
+        requests.post(f"{API_URL}/tracker/settings", json=payload)
+        write_log(f"Saving settings...", type="info")
+    except requests.exceptions.RequestException as e:
+        write_log(f"Error saving settings: {e}", "error")
+        ctk.CTkMessagebox.show_error("Error", "Failed to save settings. Please check your internet connection.")
+    except json.JSONDecodeError as e:
+        write_log(f"Error decoding JSON: {e}", "error")
+        ctk.CTkMessagebox.show_error("Error", "Failed to save settings. Please check your internet connection.")
+    except Exception as e:
+        write_log(f"Unexpected error: {e}", "error")
+        ctk.CTkMessagebox.show_error("Error", "An unexpected error occurred. Please try again.")
+
+def load_setting(setting: str, switch: ctk.CTkSwitch) -> int:
+    """
+    Load settings from the API.
+    """
+    user_data = load_json(resource_path("data/user.json"))
+    payload = {
+        "userID": user_data["userID"],
+        "settings": [setting]
+        }
+    
+    try:
+        response = requests.post(f"{API_URL}/tracker/settings/init", json=payload)
+        response.raise_for_status()
+        if response.status_code != 200:
+            write_log(f"Error loading settings: {response.status_code}", "error")
+            ctk.CTkMessagebox.show_error("Error", "Failed to load settings. Please check your internet connection.")
+        else:
+            data = response.json()
+            switch.set(data["settings"][0])
+            
+    except requests.exceptions.RequestException as e:
+        write_log(f"Error loading settings: {e}", "error")
+        ctk.CTkMessagebox.show_error("Error", "Failed to load settings. Please check your internet connection.")
+    except json.JSONDecodeError as e:
+        write_log(f"Error decoding JSON: {e}", "error")
+        ctk.CTkMessagebox.show_error("Error", "Failed to load settings. Please check your internet connection.")
+    except Exception as e:
+        write_log(f"Unexpected error: {e}", "error")
+        ctk.CTkMessagebox.show_error("Error", "An unexpected error occurred. Please try again.")
