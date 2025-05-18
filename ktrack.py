@@ -2,7 +2,7 @@ import customtkinter as ctk, requests, threading, time, sys
 from truck_telemetry import truck_telemetry
 from PIL import Image, ImageTk
 from src.components.tracking.deliveries import Deliveries
-from src.components.pretools import save_json, load_json, resource_path, write_log, save_txt, load_setting
+from src.components.pretools import save_json, load_json, resource_path, write_log, save_txt
 import src.components.operations.ui as ui
 import src.components.operations.discord_integ as dinteg
 from src.components.cfg import API_URL
@@ -50,8 +50,8 @@ class LoginWindow(ctk.CTk):
         self.resizable(False, False)
         self.protocol("WM_DELETE_WINDOW", lambda: None)
 
-        if self.auto_login():
-            return
+        # if self.auto_login():
+        #     return
 
         self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, command=self.on_close, fg_color="darkred", hover_color="red")
         self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
