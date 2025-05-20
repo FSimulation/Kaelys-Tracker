@@ -1,7 +1,7 @@
 from pypresence import Presence
 from truck_telemetry import truck_telemetry
 import time
-from src.components.pretools import write_log
+from src.components.pretools import write_log, load_json, resource_path
 
 
 CLIENT_ID = "1370341805769625732"  # Ton client ID Discord
@@ -34,38 +34,45 @@ class RichPresence:
 
 
     def update_presence(self, state):
-        try:
-            self.connect()
-            game_int = self.get_game()
-            game = ""
+        # Load settings
+        memory = load_json(resource_path("data/memory.json"))
+        settings = memory["settings"]
+        enabledRPC = settings["RPC"]
 
-            if game_int == 1:
-                game = "Euro Truck Simulator 2"
-                img = "ets2"
-            elif game_int == 2:
-                game = "American Truck Simulator"
-                img = "ats"
-            else:
-                game = game_int
-                img = "ktrack"
+        # Execute
+        if enabledRPC:
+            try:
+                self.connect()
+                game_int = self.get_game()
+                game = ""
 
-            if not self.previous_game or self.previous_game != game:
-                self.rpc.update(
-                    state=state,
-                    details=game,
-                    start=time.time(),
-                    large_image=img,
-                    large_text=game,
-                    buttons=[
-                        {"label": "Discord Guild", "url": "https://discord.gg/C95vassuy4"},
-                        {"label": "Video Trailer", "url": "https://www.youtube.com/watch?v=BjgIGn5Wa4w"}
-                    ]
-                )
-                self.previous_game = game
-                write_log("Presence updated")
-        except Exception as e:
-            write_log(f"Error encountered in RPC loop: {e}", type="error")
+                if game_int == 1:
+                    game = "Euro Truck Simulator 2"
+                    img = "ets2"
+                elif game_int == 2:
+                    game = "American Truck Simulator"
+                    img = "ats"
+                else:
+                    game = game_int
+                    img = "ktrack"
 
+                if not self.previous_game or self.previous_game != game:
+                    self.rpc.update(
+                        state=state,
+                        details=game,
+                        start=time.time(),
+                        large_image=img,
+                        large_text=game,
+                        buttons=[
+                            {"label": "Discord Guild", "url": "https://discord.gg/C95vassuy4"},
+                            {"label": "Video Trailer", "url": "https://www.youtube.com/watch?v=BjgIGn5Wa4w"}
+                        ]
+                    )
+                    self.previous_game = game
+                    write_log("Presence updated")
+            except Exception as e:
+                write_log(f"Error encountered in RPC loop: {e}", type="error")
+                
 
     def run_loop(self):
         self.running = True

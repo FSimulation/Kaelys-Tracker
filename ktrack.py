@@ -2,7 +2,7 @@ import customtkinter as ctk, requests, threading, time, sys
 from truck_telemetry import truck_telemetry
 from PIL import Image, ImageTk
 from src.components.tracking.deliveries import Deliveries
-from src.components.pretools import save_json, load_json, resource_path, write_log, save_txt
+from src.components.pretools import save_json, load_json, resource_path, write_log, save_txt, load_settings
 import src.components.operations.ui as ui
 import src.components.operations.discord_integ as dinteg
 from src.components.cfg import API_URL
@@ -39,7 +39,7 @@ class LoginWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("KaelysTrack")
-        self.geometry("600x400")
+        self.geometry("600x375")
         #self.iconbitmap(resource_path("src/static/ktrack.ico")) changed to self.iconphoto for better compatibility (Ln 46 and 164)
         icon_path = resource_path("src/static/ktrack.png")
         icon_image = Image.open(icon_path)
@@ -59,6 +59,7 @@ class LoginWindow(ctk.CTk):
         self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
 
         self.setup_ui()
+
 
     def auto_login(self):
         try:
@@ -101,8 +102,23 @@ class LoginWindow(ctk.CTk):
         image_label = ctk.CTkLabel(self, image=image, text="")
         image_label.pack(pady=10)
 
-        label = ctk.CTkLabel(self, text="Login", font=("Arial", 20))
-        label.pack(pady=10)
+        # API CHECK
+        response = requests.get(f"{API_URL}/")
+        if response.status_code == 200:
+            data = response.json()
+            self.api_status = data["state"]
+        else:
+            self.api_status = "OFFLINE"
+
+        self.api_check_label = ctk.CTkLabel(self, text="API check", font=("Poppins", 12))
+        self.api_check_label.pack(pady=0)
+        if self.api_status == "ONLINE":
+            self.api_state_label = ctk.CTkLabel(self, text="ONLINE", font=("Poppins", 12), text_color="green")
+        elif self.api_status == "DISABLED":
+            self.api_state_label = ctk.CTkLabel(self, text="MAINTENANCE", font=("Poppins", 12), text_color="yellow")
+        elif self.api_status == "OFFLINE":
+            self.api_state_label = ctk.CTkLabel(self, text="OFFLINE", font=("Poppins", 12), text_color="red")
+        self.api_state_label.pack(pady=0)
 
         self.username = ctk.CTkEntry(self, placeholder_text="Username")
         self.username.pack(pady=10)
@@ -110,52 +126,78 @@ class LoginWindow(ctk.CTk):
         self.password = ctk.CTkEntry(self, placeholder_text="Password", show="*")
         self.password.pack(pady=10)
 
-        self.login_button = ctk.CTkButton(self, text="Go!", command=lambda: [write_log("Login button clicked"), self.login()])
+        self.login_button = ctk.CTkButton(self, text="Go!", command=self.login)
         self.login_button.pack(pady=10)
 
 
 
     def login(self):
-        self.login_button.configure(text="Loading...")
-        self.login_button.update()
-        creds = {
-            "username": self.username.get(),
-            "password": self.password.get()
-        }
-        response = requests.get(f"{API_URL}/tracker/login", json=creds)
-        if response.status_code == 200:
-            data = response.json()
+        if not self.api_status == "OFFLINE":
+            self.login_button.configure(text="Loading...")
+            self.login_button.update()
+            creds = {
+                "username": self.username.get(),
+                "password": self.password.get()
+            }
+            response = requests.get(f"{API_URL}/tracker/login", json=creds)
+            if response.status_code == 200:
+                data = response.json()
 
-            if data["error"]:
-                write_log(data["message"], type="error")
-                error_label = ctk.CTkLabel(self, text=data["message"], text_color="red")
+                if data["error"]:
+                    write_log(data["message"], type="error")
+                    error_label = ctk.CTkLabel(self, text=data["message"], text_color="red")
+                    error_label.pack(pady=5)
+                    self.login_button.configure(text="Go!")
+                    self.login_button.update()
+                else:
+                    write_log("Logged in successfully", type="info")
+                    user_data = data["user"]
+
+                    # Encrypt the password before saving
+                    encrypted_password = cipher.encrypt(creds["password"].encode()).decode()
+                    user_data["encrypted_password"] = encrypted_password
+
+                    save_json(user_data, resource_path("data/user.json"))
+                    self.destroy()
+                    self.main_window = MainWindow()
+                    self.main_window.mainloop()
+
+            else:
+                write_log("Error: Unable to connect to the server.", type="error")
+                error_label = ctk.CTkLabel(self, text="Unable to connect to the server.", text_color="red")
                 error_label.pack(pady=5)
                 self.login_button.configure(text="Go!")
                 self.login_button.update()
-            else:
-                write_log(data, type="info")
-                user_data = data["user"]
-
-                # Encrypt the password before saving
-                encrypted_password = cipher.encrypt(creds["password"].encode()).decode()
-                user_data["encrypted_password"] = encrypted_password
-
-                save_json(user_data, resource_path("data/user.json"))
-                self.destroy()
-                self.main_window = MainWindow()
-                self.main_window.mainloop()
+        
         else:
-            write_log("Error: Unable to connect to the server.", type="error")
-            error_label = ctk.CTkLabel(self, text="Unable to connect to the server.", text_color="red")
-            error_label.pack(pady=5)
-            self.login_button.configure(text="Go!")
-            self.login_button.update()
+            self.show_error("The API is not available. Please try again later.")
+    
+
+    def show_error(self, message: str):
+        error_window = ctk.CTkToplevel()
+        error_window.geometry("300x150")
+        error_window.title("Error")
+        error_window.resizable(False, False)
+
+        ctk.CTkLabel(error_window, text="An error occured.", text_color="red", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 5))
+        ctk.CTkLabel(error_window, text=message, wraplength=250).pack(pady=5)
+        ctk.CTkButton(error_window, text="Close", command=error_window.destroy).pack(pady=10)
+
+        error_window.grab_set()
+        write_log(message, type="error")
 
 
 
 class MainWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
+        # INIT SETTINGS
+        success = load_settings()
+        if not success:
+            self.show_error("CRITICAL: Couldn't load settings. Aborting startup.")
+            return
+
+        # BUILD APP
         self.title("KaelysTrack")
         self.geometry("700x700")
         #self.iconbitmap(resource_path("src/static/ktrack.ico"))
@@ -193,9 +235,7 @@ class MainWindow(ctk.CTk):
         try:
             global tracking_disabled
             tracking_disabled = True
-            write_log("Stopping tracking...", type="info")
             self.stop_tracking()
-            write_log("Tracking stopped successfully. Stopping Discord RPC...", type="info")
             self.rpc.stop()
             time.sleep(0.5)
             write_log("Application closed cleanly")

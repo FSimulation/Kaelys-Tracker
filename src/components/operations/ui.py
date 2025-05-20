@@ -1,9 +1,9 @@
-import requests, customtkinter as ctk, threading, time, json, asyncio
+import requests, customtkinter as ctk, threading, time, json, asyncio, tkinter as tk
 from PIL import Image
 from io import BytesIO
 from tkinter import filedialog
 from ktrack import tracking_disabled
-from src.components.pretools import write_log, load_json, resource_path, load_txt, save_json, get_switch_value
+from src.components.pretools import write_log, load_json, resource_path, load_txt, save_json, get_switch_value, save_settings
 from werkzeug.security import generate_password_hash
 import sys
 from src.components.cfg import API_URL
@@ -217,7 +217,7 @@ class SettingsPage(ctk.CTkFrame):
         # === SETTINGS LABEL ===
         self.settings_label = ctk.CTkLabel(self, text="Settings", font=("Poppins", 20, "italic"))
         self.settings_label.pack(pady=2)
-        notice = "⚠️ These settings are implemented as beta features. They might not work as expected.\n Please report any issues you may encounter."
+        notice = "⚠️ Some settings may need a restart to apply."
         self.settings_label = ctk.CTkLabel(self, text=notice, font=("Poppins", 10, "bold"))
         self.settings_label.pack(pady=2)
 
@@ -245,20 +245,7 @@ class SettingsPage(ctk.CTkFrame):
         self.main_frame.grid_columnconfigure(2, weight=1)
         self.main_frame.grid_rowconfigure(0, weight=1)
 
-
-
         # === COLUMNS CONTENTS ===
-        # Column 1
-        # self.job_notif_label = ctk.CTkLabel(self.column_1, text="Job Notifications", font=("Poppins", 16, "bold", "overstrike"))
-        # self.job_notif_label.pack(pady=5, padx=10)
-        # self.job_notif_select = ctk.CTkOptionMenu(
-        #     self.column_1,
-        #     values=["Discord Guild", "Direct Message", "Both"],
-        #     command=lambda x: print(f"Job notifications set to {x}"),
-        #     text_color="white",
-        # )
-        # self.job_notif_select.pack(pady=5, padx=10)
-
         #Column 1
         self.delete_login_frame = ctk.CTkFrame(self.column_1, fg_color="#2B2B2B")
         self.delete_login_frame.pack(pady=5, padx=10)
@@ -267,17 +254,17 @@ class SettingsPage(ctk.CTkFrame):
         self.delete_login_button = ctk.CTkButton(self.delete_login_frame, text="Logout", font=("Poppins", 12), command=lambda: [write_log("Logged out successfully!", type="info"), self.delete_login(), self.safe_close_app()])
         self.delete_login_button.pack(pady=5, padx=10)
 
-        ### KEEP DISABLED FOR NOW
-        #Switches
-        # self.switches_settings = ctk.CTkFrame(self.column_1, fg_color="#2B2B2B")
-        # self.switches_settings.pack(pady=5, padx=10)
-        # self.discord_rpc_switch = ctk.CTkSwitch(self.switches_settings, text="Discord RPC", onvalue=1, offvalue=0, command=lambda: [write_log(f"Discord RPC set to {get_switch_value(self.discord_rpc_switch)}", type="info"), self.discord_rpc_switch.set(get_switch_value(self.discord_rpc_switch))])
-        # self.discord_rpc_switch.pack(pady=5, padx=10)
+        ## Switches
+        # RPC -> CAUTION: self.rpc_var is only used to determine initial RPC switch value
+        memory = load_json(resource_path("data/memory.json"))
+        settings = memory["settings"]
+        self.rpc_var = tk.IntVar(value=1 if settings["RPC"] else 0)
+        self.discord_rpc_switch = ctk.CTkSwitch(self.column_1, text="Discord RPC", onvalue=1, offvalue=0, command=lambda: [write_log(f"[ SETTINGS PRESET] Discord RPC set to {get_switch_value(self.discord_rpc_switch)}", type="info")], variable=self.rpc_var)
+        self.discord_rpc_switch.pack(pady=5, padx=10)
+
+        ### WARNING: This code won't be used for now, keep it commented out :3
         # self.dm_notif_switch = ctk.CTkSwitch(self.switches_settings, text="DM Notifications", onvalue=1, offvalue=0, command=lambda: [write_log(f"DM Notifications set to {get_switch_value(self.dm_notif_switch)}", type="info"), self.dm_notif_switch.set(get_switch_value(self.dm_notif_switch))])
         # self.dm_notif_switch.pack(pady=5, padx=10)
-        # self.save_settings_button = ctk.CTkButton(self.switches_settings, text="Save Settings", font=("Poppins", 12), command=lambda: [write_log("Settings saved successfully!", type="info"), save_settings(self.discord_rpc_switch, self.discord_rpc_switch.get()), save_settings(self.dm_notif_switch, self.dm_notif_switch.get())])
-        # self.save_settings_button.pack(pady=5, padx=10)
-
         #Set switch values
         # load_setting("RPC", self.discord_rpc_switch)
         # load_setting("DM", self.dm_notif_switch)
@@ -290,6 +277,9 @@ class SettingsPage(ctk.CTkFrame):
         self.export_jobs_button = ctk.CTkButton(self.export_jobs_frame, text="Export jobs to CSV", font=("Poppins", 12), command=lambda: [asyncio.run(self.export_to_csv())])
         self.export_jobs_button.pack(pady=5, padx=10)
 
+        self.save_settings_button = ctk.CTkButton(self.column_2, text="Save Settings", font=("Poppins", 12), command=self.send_settings)
+        self.save_settings_button.pack(pady=5, padx=10)
+
         #Column 3
         self.settings_hotkeys_frame = ctk.CTkFrame(self.column_3, fg_color="#2B2B2B")
         self.settings_hotkeys_frame.pack(pady=5, padx=10)
@@ -299,6 +289,15 @@ class SettingsPage(ctk.CTkFrame):
         self.show_hotkeys_button.pack(pady=5, padx=10)
 
 
+    def send_settings(self):
+            s = {
+                "RPC": get_switch_value(self.discord_rpc_switch)
+            }
+            success = save_settings(s)
+            if not success:
+                self.show_error("Couldn't save new settings.")
+            else:
+                self.show_success("Settings saved!")
 
 
     def show_error(self, message: str):
@@ -312,7 +311,18 @@ class SettingsPage(ctk.CTkFrame):
         ctk.CTkButton(error_window, text="Close", command=error_window.destroy).pack(pady=10)
 
         error_window.grab_set()
-        write_log(message, type="error")
+
+    
+    def show_success(self, message: str):
+        success_window = ctk.CTkToplevel()
+        success_window.geometry("300x150")
+        success_window.title("Success")
+        success_window.resizable(False, False)
+
+        ctk.CTkLabel(success_window, text=message, wraplength=250).pack(pady=5)
+        ctk.CTkButton(success_window, text="Close", command=success_window.destroy).pack(pady=10)
+
+        success_window.grab_set()
 
 
     async def export_to_csv(self):

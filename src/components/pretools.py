@@ -12,13 +12,15 @@ def save_json(data: dict, filename: str) -> None:
         json.dump(data, f)
 
 
+
 def load_json(filename: str) -> dict:
     """
     Load data from a JSON file.
     """
     with open(filename, 'r') as f:
         return json.load(f)
-    
+
+
 
 def load_txt(filename: str) -> str:
     """
@@ -28,6 +30,7 @@ def load_txt(filename: str) -> str:
         return f.read()
     
 
+
 def save_txt(data: str, filename: str) -> None:
     """
     Save data to a text file.
@@ -36,10 +39,12 @@ def save_txt(data: str, filename: str) -> None:
         f.write(data)
 
 
+
 def resource_path(relative_path: str) -> str:
     """Return absolute path to a file, either the program is compiled in .EXE or not"""
     base_path = getattr(sys, '_MEIPASS', os.path.abspath("."))
     return os.path.join(base_path, relative_path)
+
 
 
 def is_server_running(host: str="localhost", port: int=25555) -> bool:
@@ -49,6 +54,7 @@ def is_server_running(host: str="localhost", port: int=25555) -> bool:
     except OSError:
         return False
     
+
 
 def write_log(message: str, type: str = "info") -> None:
     """
@@ -71,9 +77,11 @@ def write_log(message: str, type: str = "info") -> None:
     print(f"[{now_str}] | {type.upper()}: {message}")
 
 
+
 def convert_game_time(iso_str: str):
     dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
     return round(dt.hour + dt.minute / 60 + dt.second / 3600, 2)
+
 
 
 def generate_job_id(job_data: dict) -> int:
@@ -85,6 +93,7 @@ def generate_job_id(job_data: dict) -> int:
     return hash_int % 1000000
 
 
+
 def get_switch_value(switch: ctk.CTkSwitch) -> bool:
     """
     Get the value of a CTkSwitch.
@@ -92,62 +101,65 @@ def get_switch_value(switch: ctk.CTkSwitch) -> bool:
     return True if switch.get() == 1 else False
     
 
-# def save_settings(setting: str, value: int) -> None:
-#     """
-#     Save settings to the DB thru the API.
-#     """
-#     user_data = load_json(resource_path("data/user.json"))
-#     payload = {
-#         "userID": user_data["userID"],
-#         "settings": {setting: value}
-#         }
-    
-#     payload["settings"][setting] = value
 
-#     memory = load_json(resource_path("data/memory.json"))
-#     memory["settings"][setting] = value
-#     save_json(memory, resource_path("data/memory.json"))
-    
-#     try:
-#         requests.post(f"{API_URL}/tracker/settings", json=payload)
-#         write_log(f"Saving settings...", type="info")
-#     except requests.exceptions.RequestException as e:
-#         write_log(f"Error saving settings: {e}", "error")
-#         ctk.CTkMessagebox.show_error("Error", "Failed to save settings. Please check your internet connection.")
-#     except json.JSONDecodeError as e:
-#         write_log(f"Error decoding JSON: {e}", "error")
-#         ctk.CTkMessagebox.show_error("Error", "Failed to save settings. Please check your internet connection.")
-#     except Exception as e:
-#         write_log(f"Unexpected error: {e}", "error")
-#         ctk.CTkMessagebox.show_error("Error", "An unexpected error occurred. Please try again.")
+def save_settings(s: dict) -> bool:
+    """
+    Send new tracker settings to API | Save updated settings to memory
+    return: True if success, else False
+    """
+    # Prepare payload
+    user_data = load_json(resource_path("data/user.json"))
+    payload = {
+        "userID": user_data["id"],
+        "settings": s
+    }
+
+    # Execute
+    try:
+        response = requests.post(f'{API_URL}/tracker/settings', json=payload)
+        result = response.json()
+        if result["error"]:
+            write_log(f'Error while saving settings: {result["message"]}', type="error")
+            return False
+        else:
+            write_log("Settings saved successfully")
+
+            new_settings = result["settings"]
+            memory = load_json(resource_path("data/memory.json"))
+            memory["settings"] = new_settings
+            save_json(memory, resource_path("data/memory.json"))
+            write_log("Settings loaded to memory")
+
+            return True
+        
+    except Exception as e:
+        write_log(f'Error while saving settings: {e}', type="error")
+        return False
 
 
-# def load_setting(setting: str, switch: ctk.CTkSwitch) -> int:
-#     """
-#     Load settings from the API.
-#     """
-#     user_data = load_json(resource_path("data/user.json"))
-#     payload = {
-#         "userID": user_data["id"],
-#         "settings": [setting]
-#         }
+
+def load_settings() -> bool:
+    """
+    Initialization of tracker settings (startup)
+    return: True if success, else False
+    """
+    # Prepare payload
+    user_data = load_json(resource_path("data/user.json"))
+    payload = {
+        "id": user_data["id"]
+    }
+
+    # Execute
+    response = requests.get(f'{API_URL}/tracker/settings/init', json=payload)
+    result = response.json()
+
+    if result["error"]:
+        write_log(f'Error while loading settings: {result["message"]}', type="error")
+        return False
+    else:
+        memory = load_json(resource_path("data/memory.json"))
+        memory["settings"] = result["settings"]
+        write_log("Settings loaded to memory")
+        
+        return True
     
-#     try:
-#         response = requests.get(f"{API_URL}/tracker/settings/init", json=payload)
-#         response.raise_for_status()
-#         if response.status_code != 200:
-#             write_log(f"Error loading settings: {response.status_code}", "error")
-#             ctk.CTkMessagebox.show_error("Error", "Failed to load settings. Please check your internet connection.")
-#         else:
-#             data = response.json()
-#             switch.set(data["settings"][0])
-            
-#     except requests.exceptions.RequestException as e:
-#         write_log(f"Error loading settings: {e}", "error")
-#         ctk.CTkMessagebox.show_error("Error", "Failed to load settings. Please check your internet connection.")
-#     except json.JSONDecodeError as e:
-#         write_log(f"Error decoding JSON: {e}", "error")
-#         ctk.CTkMessagebox.show_error("Error", "Failed to load settings. Please check your internet connection.")
-#     except Exception as e:
-#         write_log(f"Unexpected error: {e}", "error")
-#         ctk.CTkMessagebox.show_error("Error", "An unexpected error occurred. Please try again.")
