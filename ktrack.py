@@ -1,4 +1,4 @@
-import customtkinter as ctk, requests, threading, time, sys
+import customtkinter as ctk, requests, threading, time, sys, asyncio
 from truck_telemetry import truck_telemetry
 from PIL import Image, ImageTk
 from src.components.tracking.deliveries import Deliveries
@@ -53,7 +53,9 @@ class LoginWindow(ctk.CTk):
         # if self.auto_login():
         #     return
 
-        self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, command=self.on_close, fg_color="darkred", hover_color="red")
+        self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
+                                          command=self.on_close, 
+                                          fg_color="darkred", hover_color="red")
         self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
         self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
         self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
@@ -61,29 +63,29 @@ class LoginWindow(ctk.CTk):
         self.setup_ui()
 
 
-    def auto_login(self):
-        try:
-            user_data = load_json(resource_path("data/user.json"))
-            if "encrypted_password" in user_data:
-                # Decrypt the password
-                decrypted_password = cipher.decrypt(user_data["encrypted_password"].encode()).decode()
+    # def auto_login(self):
+    #     try:
+    #         user_data = load_json(resource_path("data/user.json"))
+    #         if "encrypted_password" in user_data:
+    #             # Decrypt the password
+    #             decrypted_password = cipher.decrypt(user_data["encrypted_password"].encode()).decode()
 
-                # Try auto-login
-                response = requests.get(f"{API_URL}/tracker/login", json={
-                    "username": user_data["username"],
-                    "password": decrypted_password
-                })
-                if response.status_code == 200:
-                    data = response.json()
-                    if not data["error"]:
-                        write_log("Auto-login successful.", type="info")
-                        self.destroy()
-                        self.main_window = MainWindow()
-                        self.main_window.mainloop()
-                        return True
-        except Exception as e:
-            write_log(f"Auto-login failed: {e}", type="error")
-        return False         
+    #             # Try auto-login
+    #             response = requests.get(f"{API_URL}/tracker/login", json={
+    #                 "username": user_data["username"],
+    #                 "password": decrypted_password
+    #             })
+    #             if response.status_code == 200:
+    #                 data = response.json()
+    #                 if not data["error"]:
+    #                     write_log("Auto-login successful.", type="info")
+    #                     self.destroy()
+    #                     self.main_window = MainWindow()
+    #                     self.main_window.mainloop()
+    #                     return True
+    #     except Exception as e:
+    #         write_log(f"Auto-login failed: {e}", type="error")
+    #     return False         
     
 
     def on_close(self):
@@ -188,6 +190,8 @@ class LoginWindow(ctk.CTk):
 
 
 
+
+
 class MainWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
@@ -211,7 +215,9 @@ class MainWindow(ctk.CTk):
         self.resizable(False, False)
         self.protocol("WM_DELETE_WINDOW", lambda: None)
 
-        self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, command=self.on_close, fg_color="darkred", hover_color="red")
+        self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
+                                          command=self.on_close, 
+                                          fg_color="darkred", hover_color="red")
         self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
         self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
         self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
@@ -234,12 +240,10 @@ class MainWindow(ctk.CTk):
     def on_close(self):
         try:
             global tracking_disabled
-            tracking_disabled = True
-            self.stop_tracking()
+            if not tracking_disabled:
+                self.stop_tracking()
             self.rpc.stop()
-            time.sleep(0.5)
             write_log("Application closed cleanly")
-            self.destroy()
         except Exception as e:
             write_log(f"Application closed with error: {e}", type="error")
         sys.exit()
