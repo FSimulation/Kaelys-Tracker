@@ -1,14 +1,19 @@
-import customtkinter as ctk, requests, threading, time, sys, asyncio
+import customtkinter as ctk, threading, time, sys, asyncio, keyboard
 from truck_telemetry import truck_telemetry
 from PIL import Image, ImageTk
 from src.components.tracking.deliveries import Deliveries
-from src.components.pretools import save_json, load_json, resource_path, write_log, save_txt, load_settings
+from src.components.pretools import GeneralTools, KaelysAPI, AppSettings
 import src.components.operations.ui as ui
 import src.components.operations.discord_integ as dinteg
-from src.components.cfg import API_URL
-import keyboard
 from cryptography.fernet import Fernet
 
+
+tools = GeneralTools()
+api = KaelysAPI()
+settings = AppSettings()
+
+
+"save_json, load_json, resource_path, write_log, save_txt, load_settings"
 
 lastData = {}
 
@@ -39,14 +44,14 @@ class LoginWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("KaelysTrack")
-        self.geometry("600x375")
+        self.geometry("600x400")
         #self.iconbitmap(resource_path("src/static/ktrack.ico")) changed to self.iconphoto for better compatibility (Ln 46 and 164)
-        icon_path = resource_path("src/static/ktrack.png")
+        icon_path = tools.resource_path("src/static/ktrack.png")
         icon_image = Image.open(icon_path)
         icon_photo = ImageTk.PhotoImage(icon_image)
         self.iconphoto(True, icon_photo)
         ctk.set_appearance_mode("Dark")
-        ctk.set_default_color_theme(resource_path("src/theme.json"))
+        ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
         self.resizable(False, False)
         self.protocol("WM_DELETE_WINDOW", lambda: None)
 
@@ -54,7 +59,7 @@ class LoginWindow(ctk.CTk):
         #     return
 
         self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
-                                          command=self.on_close, 
+                                          command=self.on_close,
                                           fg_color="darkred", hover_color="red")
         self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
         self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
@@ -90,36 +95,37 @@ class LoginWindow(ctk.CTk):
 
     def on_close(self):
         try:
-            write_log("Application closed cleanly")
+            tools.write_log("Application closed cleanly")
             self.destroy()
         except Exception as e:
-            write_log(f"Application closed with error: {e}", type="error")
+            tools.write_log(f"Application closed with error: {e}", type="error")
         sys.exit()
 
 
     def setup_ui(self):
-        image_path = resource_path("src/static/LoginBanner.png")
+        image_path = tools.resource_path("src/static/LoginBanner.png")
         pil_image = Image.open(image_path)
         image = ctk.CTkImage(size=(250, 140), light_image=pil_image)
         image_label = ctk.CTkLabel(self, image=image, text="")
         image_label.pack(pady=10)
 
         # API CHECK
-        response = requests.get(f"{API_URL}/")
-        if response.status_code == 200:
-            data = response.json()
-            self.api_status = data["state"]
+        status = asyncio.run(api.get_status())
+        if status == 200:
+            self.api_status = "ONLINE"
         else:
             self.api_status = "OFFLINE"
 
         self.api_check_label = ctk.CTkLabel(self, text="API check", font=("Poppins", 12))
         self.api_check_label.pack(pady=0)
+
         if self.api_status == "ONLINE":
             self.api_state_label = ctk.CTkLabel(self, text="ONLINE", font=("Poppins", 12), text_color="green")
-        elif self.api_status == "DISABLED":
-            self.api_state_label = ctk.CTkLabel(self, text="MAINTENANCE", font=("Poppins", 12), text_color="yellow")
+        # elif self.api_status == "DISABLED":
+        #     self.api_state_label = ctk.CTkLabel(self, text="MAINTENANCE", font=("Poppins", 12), text_color="yellow")
         elif self.api_status == "OFFLINE":
             self.api_state_label = ctk.CTkLabel(self, text="OFFLINE", font=("Poppins", 12), text_color="red")
+
         self.api_state_label.pack(pady=0)
 
         self.username = ctk.CTkEntry(self, placeholder_text="Username")
@@ -132,7 +138,6 @@ class LoginWindow(ctk.CTk):
         self.login_button.pack(pady=10)
 
 
-
     def login(self):
         if not self.api_status == "OFFLINE":
             self.login_button.configure(text="Loading...")
@@ -141,35 +146,25 @@ class LoginWindow(ctk.CTk):
                 "username": self.username.get(),
                 "password": self.password.get()
             }
-            response = requests.get(f"{API_URL}/tracker/login", json=creds)
-            if response.status_code == 200:
-                data = response.json()
-
-                if data["error"]:
-                    write_log(data["message"], type="error")
-                    error_label = ctk.CTkLabel(self, text=data["message"], text_color="red")
-                    error_label.pack(pady=5)
-                    self.login_button.configure(text="Go!")
-                    self.login_button.update()
-                else:
-                    write_log("Logged in successfully", type="info")
-                    user_data = data["user"]
-
-                    # Encrypt the password before saving
-                    encrypted_password = cipher.encrypt(creds["password"].encode()).decode()
-                    user_data["encrypted_password"] = encrypted_password
-
-                    save_json(user_data, resource_path("data/user.json"))
-                    self.destroy()
-                    self.main_window = MainWindow()
-                    self.main_window.mainloop()
-
-            else:
-                write_log("Error: Unable to connect to the server.", type="error")
-                error_label = ctk.CTkLabel(self, text="Unable to connect to the server.", text_color="red")
+            data = asyncio.run(api.get("/tracker/login", creds))
+            if data["error"]:
+                tools.write_log(data["message"], type="error")
+                error_label = ctk.CTkLabel(self, text=data["message"], text_color="red")
                 error_label.pack(pady=5)
                 self.login_button.configure(text="Go!")
                 self.login_button.update()
+            else:
+                tools.write_log("Logged in successfully", type="info")
+                user_data = data["user"]
+
+                ## Encrypt the password before saving (disabled for now)
+                # encrypted_password = cipher.encrypt(creds["password"].encode()).decode()
+                # user_data["encrypted_password"] = encrypted_password
+
+                tools.save_json(user_data, tools.resource_path("data/user.json"))
+                self.destroy()
+                self.main_window = MainWindow()
+                self.main_window.mainloop()
         
         else:
             self.show_error("The API is not available. Please try again later.")
@@ -186,7 +181,7 @@ class LoginWindow(ctk.CTk):
         ctk.CTkButton(error_window, text="Close", command=error_window.destroy).pack(pady=10)
 
         error_window.grab_set()
-        write_log(message, type="error")
+        tools.write_log(message, type="error")
 
 
 
@@ -196,7 +191,7 @@ class MainWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         # INIT SETTINGS
-        success = load_settings()
+        success = asyncio.run(settings.load())
         if not success:
             self.show_error("CRITICAL: Couldn't load settings. Aborting startup.")
             return
@@ -205,13 +200,13 @@ class MainWindow(ctk.CTk):
         self.title("KaelysTrack")
         self.geometry("700x700")
         #self.iconbitmap(resource_path("src/static/ktrack.ico"))
-        icon_path = resource_path("src/static/ktrack.png")
+        icon_path = tools.resource_path("src/static/ktrack.png")
         icon_image = Image.open(icon_path)
         icon_photo = ImageTk.PhotoImage(icon_image)
         self.iconphoto(False, icon_photo)
         ctk.set_appearance_mode("Dark")
-        ctk.set_default_color_theme(resource_path("src/theme.json"))
-        self.user_data = load_json(resource_path("data/user.json"))
+        ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
+        self.user_data = tools.load_json(tools.resource_path("data/user.json"))
         self.resizable(False, False)
         self.protocol("WM_DELETE_WINDOW", lambda: None)
 
@@ -240,12 +235,12 @@ class MainWindow(ctk.CTk):
     def on_close(self):
         try:
             global tracking_disabled
-            if not tracking_disabled:
+            if tracking_disabled == False:
                 self.stop_tracking()
             self.rpc.stop()
-            write_log("Application closed cleanly")
+            tools.write_log("Application closed cleanly")
         except Exception as e:
-            write_log(f"Application closed with error: {e}", type="error")
+            tools.write_log(f"Application closed with error: {e}", type="error")
         sys.exit()
 
 
@@ -254,7 +249,7 @@ class MainWindow(ctk.CTk):
     def print_game_data(self):
         truck_telemetry.init()
         data = truck_telemetry.get_data()
-        write_log(data)
+        tools.write_log(data)
         truck_telemetry.deinit()
 
 
@@ -270,7 +265,7 @@ class MainWindow(ctk.CTk):
         ctk.CTkButton(error_window, text="Close", command=error_window.destroy).pack(pady=10)
 
         error_window.grab_set()
-        write_log(message, type="error")
+        tools.write_log(message, type="error")
 
     
 
@@ -280,6 +275,7 @@ class MainWindow(ctk.CTk):
 
 
     def show_game_notification(self, message: str, delay: int):
+        tools.walkie_sound()
         notif = ctk.CTkToplevel()
         notif.overrideredirect(True)
         notif.attributes("-topmost", True)
@@ -296,14 +292,14 @@ class MainWindow(ctk.CTk):
 
     def run_sdk_loop(self):
         global lastData
-        deliveries = Deliveries(f"{API_URL}/tracker/deliveries")
+        deliveries = Deliveries()
 
         while not self.stop_event.is_set():
             try:
                 self.telemetry_data = truck_telemetry.get_data()
 
                 if lastData == str(self.telemetry_data):
-                    write_log("No data change detected.")
+                    tools.write_log("No data change detected.")
                 else:
                     lastData = str(self.telemetry_data)
                     # ON SAIT QUE LES DONNES SONT MISES A JOUR
@@ -321,21 +317,27 @@ class MainWindow(ctk.CTk):
                     elif event_type == "job_cancelled":
                         self.game_notif("Delivery cancelled. Another \ncompany got the freight away.", delay=5000)
                     
-            except Exception as outer:
-                write_log(f"[Thread crash] {outer}", type="error")
-                error_txt = "Tracking stopped unexpectedly, probably because the game was closed."
-                self.show_error(error_txt)
-                write_log(error_txt, type="error")
-                self.stop_tracking()
+            except Exception:
+                stopping_txt = "Tracking stopped due to the game being closed."
+                self.show_error(stopping_txt)
+                tools.write_log(stopping_txt)
+                asyncio.run(self.stop_tracking_async())
                 break
 
             time.sleep(3)
     
 
+    async def start_tracking_async(self):
+        threading.Thread(target=self._run_tracking_async, daemon=True).start()
+
+    
+    def _run_tracking_async(self):
+        self.start_tracking()
+
 
     def start_tracking(self):
         if hasattr(self, "sdk_thread") and self.sdk_thread.is_alive():
-            write_log("Tracking thread already running, skipping start.")
+            tools.write_log("Tracking thread already running, skipping start.")
             return
 
         try:
@@ -345,12 +347,12 @@ class MainWindow(ctk.CTk):
             self.stop_event.clear()
             self.sdk_thread = threading.Thread(target=self.run_sdk_loop, daemon=True)
             self.sdk_thread.start()
-            self.tracking_button.configure(text="Stop tracking", command=self.stop_tracking, fg_color="darkred", hover_color="#670000")
-            write_log("Tracking started")
+            self.tracking_button.configure(text="Stop tracking", command=lambda: [asyncio.run(self.stop_tracking_async())], fg_color="darkred", hover_color="#670000")
+            tools.write_log("Tracking started")
 
             # UPDATE LIVE DRIVERS
             game = ""
-            user_data = load_json(resource_path("data/user.json"))
+            user_data = tools.load_json(tools.resource_path("data/user.json"))
             userID = user_data["id"]
             if self.telemetry_data["game"] == 1:
                 game = "ETS2"
@@ -358,15 +360,19 @@ class MainWindow(ctk.CTk):
                 game = "ATS"
 
             payload = {"id": userID, "game": game}
-            req = requests.post(f"{API_URL}/tracker/user/live/add", json=payload)
-            # result = req.json()
-            # if result["error"]:
-            #     write_log(result["message"], type="error")
+            asyncio.run(api.post("/tracker/user/live/add", payload))
 
         except FileNotFoundError:
             self.show_error("Unable to load the SDK. Either the game is not running or the SDK plugin is not installed.")
-            write_log("SDK init failed: FileNotFoundError", type="error")
+            tools.write_log("SDK init failed: FileNotFoundError", type="error")
 
+
+    async def stop_tracking_async(self):
+        threading.Thread(target=self._run_tracking_stop_async, daemon=True).start()
+
+    
+    def _run_tracking_stop_async(self):
+        self.stop_tracking()
 
 
     def stop_tracking(self):
@@ -374,17 +380,17 @@ class MainWindow(ctk.CTk):
         tracking_disabled = True
         self.stop_event.set()
         truck_telemetry.deinit()
-        self.tracking_button.configure(text="Start tracking", command=self.start_tracking, fg_color="#003F3F", hover_color="#003737")
+        self.tracking_button.configure(text="Start tracking", command=lambda: [asyncio.run(self.start_tracking_async())], fg_color="#00A000", hover_color="#008D00")
         self.game_status.configure(text="No game running.", text_color="grey")
         self.game_status.update()
-        write_log("Tracking stopped cleanly")
+        tools.write_log("Tracking stopped cleanly")
 
         # UPDATE LIVE DRIVERS
-        user_data = load_json(resource_path("data/user.json"))
+        user_data = tools.load_json(tools.resource_path("data/user.json"))
         userID = user_data["id"]
 
         payload = {"id": userID}
-        req = requests.delete(f"{API_URL}/tracker/user/live/remove", json=payload)
+        asyncio.run(api.delete("/tracker/user/live/remove", payload))
         # result = req.json()
         # if result["error"]:
         #     write_log(result["message"], type="error")
@@ -393,11 +399,10 @@ class MainWindow(ctk.CTk):
 
     def update_live_drivers(self):
         while True:
-            req = requests.get(f"{API_URL}/tracker/user/live")
-            response = req.json()
+            response = asyncio.run(api.get("/tracker/user/live"))
 
             if response["error"]:
-                write_log(response["message"], type="error")
+                tools.write_log(response["message"], type="error")
             else:
                 # ETS2
                 ets2_players = response["ets2"]
@@ -408,7 +413,7 @@ class MainWindow(ctk.CTk):
                     display_txt = ""
                     for player_name in ets2_players:
                         display_txt += f"{player_name}\n"
-                    self.online_ets2_players.configure(text=display_txt, font=("Poppins", 10, "bold"), text_color="white")
+                    self.online_ets2_players.configure(text=display_txt, font=("Poppins", 10), text_color="white")
                     self.online_ets2_players.update()
 
                 # ATS
@@ -492,7 +497,7 @@ class MainWindow(ctk.CTk):
         self.horizontal_bar.pack(padx=5, pady=5)
 
         # Tracking Control
-        self.tracking_button = ctk.CTkButton(self.frame_right_home, text="Start tracking", command=self.start_tracking, fg_color="#003F3F", hover_color="#003737")
+        self.tracking_button = ctk.CTkButton(self.frame_right_home, text="Start tracking", command=lambda: [asyncio.run(self.start_tracking_async())], fg_color="#00A000", hover_color="#008D00")
         self.tracking_button.pack(pady=10)
 
 
@@ -510,26 +515,24 @@ class MainWindow(ctk.CTk):
         self.infos_page.pack(pady=20)
 
 
-
     ## EXTRA FEATURES
     # CB EVENT
-    def handle_cb_event(self, type, message):
+    def handle_cb_event(self, event_type, message):
         global tracking_disabled
-        if not tracking_disabled:
-            response = requests.post(f"{API_URL}/tracker/cbevent", json={
-                "type": type,
+        if tracking_disabled:
+            payload = {
+                "type": event_type,
                 "message": message,
                 "discordID": self.user_data["discordID"]
-                    })
-            payload = response.json()
+            }
+            response = asyncio.run(api.post("/tracker/cbevent", payload))
 
-            if payload["error"]:
-                write_log(f"Error while submitting event: {payload['message']}", type="error")
+            if response["error"]:
+                tools.write_log(f"Error while submitting event: {response['message']}", type="error")
                 self.game_notif("Couldn't submit event")
             else:
-                write_log(f"Event Submitted: {type} - {message}")
-                self.game_notif(f"Report submitted: \n{message}")
-            
+                tools.write_log(f"Event Submitted: {event_type} - {message}")
+                self.game_notif(event_type)
 
 
     def start_key_listener(self):
@@ -537,32 +540,26 @@ class MainWindow(ctk.CTk):
             if event.event_type != 'down':
                 return
 
-            keys_down = keyboard._pressed_events
             now = time.strftime("%d-%m | %H:%M:%S")
 
-            # Check if Ctrl key (29) is pressed
-            if 29 not in keys_down:
-                return
-
-            # Ctrl + number keys 1-9
-            if 2 in keys_down:  # Ctrl + 1
+            # Ctrl + number keys 1-6
+            if keyboard.is_pressed('ctrl+1'):  # Ctrl + 1
                 self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} started driving.")
-            elif 3 in keys_down:  # Ctrl + 2
-                self.handle_cb_event("Stop", f"[{now}] | {self.user_data['username']} stopped for fuel.")
-            elif 4 in keys_down:  # Ctrl + 3
-                self.handle_cb_event("Road Event", f"[{now}] | {self.user_data['username']} got into an accident.")
-            elif 5 in keys_down:  # Ctrl + 4
-                self.handle_cb_event("Road Event", f"[{now}] | {self.user_data['username']} is taking a detour.")
-            elif 6 in keys_down:  # Ctrl + 5
-                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} started a job.")
-            elif 7 in keys_down:  # Ctrl + 6
-                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} ended a job.")
-            elif 8 in keys_down:  # Ctrl + 7
-                self.handle_cb_event("Job Event", f"[{now}] | {self.user_data['username']} cancelled a job")
-            elif 9 in keys_down:  # Ctrl + 8
-                self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} took an 8h break.")
-            elif 10 in keys_down:  # Ctrl + 9
-                self.handle_cb_event("Driving Session", f"[{now}] | {self.user_data['username']} stopped driving.")
+
+            elif keyboard.is_pressed('ctrl+2'):  # Ctrl + 2
+                self.handle_cb_event("Fuel Stop", f"[{now}] | {self.user_data['username']} stopped for fuel.")
+
+            elif keyboard.is_pressed('ctrl+3'):  # Ctrl + 3
+                self.handle_cb_event("Accident", f"[{now}] | {self.user_data['username']} got into an accident.")
+
+            elif keyboard.is_pressed('ctrl+4'):  # Ctrl + 4
+                self.handle_cb_event("Detour", f"[{now}] | {self.user_data['username']} is taking a detour.")
+
+            elif keyboard.is_pressed('ctrl+5'):  # Ctrl + 5
+                self.handle_cb_event("Break", f"[{now}] | {self.user_data['username']} took an 8h break.")
+
+            elif keyboard.is_pressed('ctrl+6'):  # Ctrl + 6
+                self.handle_cb_event("End of Session", f"[{now}] | {self.user_data['username']} stopped driving.")
 
         threading.Thread(target=lambda: keyboard.hook(on_key), daemon=True).start()
 
@@ -571,8 +568,8 @@ class MainWindow(ctk.CTk):
 
 
 if __name__ == "__main__":
-    save_txt("", resource_path("logs.txt"))
-    save_txt("", resource_path("crash.txt"))
+    tools.save_txt("", tools.resource_path("logs.txt"))
+    tools.save_txt("", tools.resource_path("crash.txt"))
     app = LoginWindow()
     app.mainloop()
     keyboard.wait('41')

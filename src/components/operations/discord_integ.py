@@ -1,7 +1,10 @@
 from pypresence import Presence
 from truck_telemetry import truck_telemetry
 import time
-from src.components.pretools import write_log, load_json, resource_path
+from src.components.pretools import GeneralTools
+
+
+tools = GeneralTools()
 
 
 CLIENT_ID = "1370341805769625732"  # Ton client ID Discord
@@ -29,13 +32,13 @@ class RichPresence:
         if not self.connected:
             self.rpc.connect()
             self.connected = True
-            write_log("Connected to Discord RPC")
+            tools.write_log("Connected to Discord RPC")
         
 
 
     def update_presence(self, state):
         # Load settings
-        memory = load_json(resource_path("data/memory.json"))
+        memory = tools.load_json(tools.resource_path("data/memory.json"))
         settings = memory["settings"]
         enabledRPC = settings["RPC"]
 
@@ -69,9 +72,9 @@ class RichPresence:
                         ]
                     )
                     self.previous_game = game
-                    write_log("Presence updated")
+                    tools.write_log("Presence updated")
             except Exception as e:
-                write_log(f"Error encountered in RPC loop: {e}", type="error")
+                tools.write_log(f"Error encountered in RPC loop: {e}", type="error")
                 
 
     def run_loop(self):
@@ -87,4 +90,4 @@ class RichPresence:
 
     def stop(self):
         self.running = False
-        write_log("Discord RPC stopped")
+        tools.write_log("Discord RPC stopped")

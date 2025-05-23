@@ -1,13 +1,16 @@
-import requests, customtkinter as ctk, threading, time, json, asyncio, tkinter as tk
+import customtkinter as ctk, threading, time, json, asyncio, tkinter as tk, requests
 from PIL import Image
 from io import BytesIO
 from tkinter import filedialog
 from ktrack import tracking_disabled
-from src.components.pretools import write_log, load_json, resource_path, load_txt, save_json, get_switch_value, save_settings
+from src.components.pretools import KaelysAPI, GeneralTools, AppSettings
 from werkzeug.security import generate_password_hash
 import sys
-from src.components.cfg import API_URL
 
+
+tools = GeneralTools()
+api = KaelysAPI()
+settings = AppSettings()
 
 
 lastData = {}
@@ -46,7 +49,7 @@ class UserProfile(ctk.CTkFrame):
         self.profile_label.pack(pady=10)
 
         # PROFILE PICTURE
-        pfp_image = Image.open(resource_path("src/static/default_pfp.png"))
+        pfp_image = Image.open(tools.resource_path("src/static/default_pfp.png"))
         self.profile_image = ctk.CTkImage(size=(100, 100), light_image=pfp_image)
         self.pfp_label = ctk.CTkLabel(self.top_frame, image=self.profile_image, text="")
         self.pfp_label.pack(pady=5)
@@ -106,7 +109,7 @@ class UserProfile(ctk.CTkFrame):
         self.rank_value.pack(padx=15, pady=5)
 
         ### LAUNCH UPDATE THREAD LOOP
-        self.user_data = load_json(resource_path("data/user.json"))
+        self.user_data = tools.load_json(tools.resource_path("data/user.json"))
         self.user_id = self.user_data["id"]
         self.update_profile_loop = threading.Thread(target=self.update_user_profile, daemon=True)
         self.update_profile_loop.start()
@@ -153,32 +156,34 @@ class UserProfile(ctk.CTkFrame):
             payload = {"id": self.user_id}
 
             try:
-                response = requests.get(f"{API_URL}/tracker/user", json=payload)
-                data = response.json()
+                data = asyncio.run(api.get("/tracker/user", payload))
                 if data["error"]:
-                    write_log(f"Error fetching user info: {data['message']}", type="error")
+                    tools.write_log(f"Error fetching user info: {data['message']}", type="error")
                     return
                 else:
+                    self.pick = data["user"]
                     if not self.previous_pick or self.pick != self.previous_pick:
-                        write_log("Loading profile...")
-                        self.pick = data["user"]
-                        self.user_id_label.configure(text=f"Your ID: {self.pick['id']}", font=("Poppins", 12, "bold"))
-                        self.user_discordID_label.configure(text=f"Your Discord ID: {self.pick['discordID']}", font=("Poppins", 12, "bold"))
-                        self.deliveries_total_value.configure(text=f"{self.pick['deliveriesTotal']}")
-                        self.wallet_value.configure(text=f"{self.pick['wallet']}")
-                        self.rank_value.configure(text=f"{self.pick['rank']}")
+                        async def load_profile():
+                            tools.write_log("Loading profile...")    
+                            self.user_id_label.configure(text=f"Your ID: {self.pick['id']}", font=("Poppins", 12, "bold"))
+                            self.user_discordID_label.configure(text=f"Your Discord ID: {self.pick['discordID']}", font=("Poppins", 12, "bold"))
+                            self.deliveries_total_value.configure(text=f"{self.pick['deliveriesTotal']}")
+                            self.wallet_value.configure(text=f"${self.pick['wallet']}")
+                            self.rank_value.configure(text=f"N°{self.pick['rank']}")
 
-                        image_response = requests.get(self.pick["avatarURL"])
-                        image = Image.open(BytesIO(image_response.content))
-                        ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(100, 100))
-                        self.pfp_label.configure(image=ctk_image)
-                        self.pfp_label.update()
-                        write_log("Profile loaded from API request")
+                            image_response = requests.get(self.pick["avatarURL"])
+                            image = Image.open(BytesIO(image_response.content))
+                            ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(100, 100))
+                            self.pfp_label.configure(image=ctk_image)
+                            self.pfp_label.update()
+                            tools.write_log("Profile loaded from API request")
 
-                        self.previous_pick = self.pick
+                            self.previous_pick = self.pick
+                        
+                        asyncio.run(load_profile())
             
-            except requests.RequestException as e:
-                write_log(f"Error fetching user info: {str(e)}", type="error")
+            except Exception as e:
+                tools.write_log(f"Error fetching user info: {str(e)}", type="error")
                 return None
                 
             time.sleep(30)  # Update every 30 seconds
@@ -192,15 +197,14 @@ class UserProfile(ctk.CTkFrame):
         payload = {"id": user_id}
 
         try:
-            response = requests.get(f"{API_URL}/tracker/user/contracts", json=payload)
-            data = response.json()
+            data = asyncio.run(api.get("/tracker/user/contracts", payload))
             if data["error"]:
-                write_log(f"Error fetching user contracts: {data['message']}", type="error")
+                tools.write_log(f"Error fetching user contracts: {data['message']}", type="error")
                 return None
             else:
                 return data
         
-        except requests.RequestException as e:
+        except Exception as e:
             print(f"Error fetching user contracts: {e}")
             return None
         
@@ -225,7 +229,6 @@ class SettingsPage(ctk.CTkFrame):
         self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.main_frame.pack(pady=10)
 
-
         # === COLUMNS CONFIGS ===
         # Column 1
         self.column_1 = ctk.CTkFrame(self.main_frame, fg_color="transparent")
@@ -246,20 +249,18 @@ class SettingsPage(ctk.CTkFrame):
         self.main_frame.grid_rowconfigure(0, weight=1)
 
         # === COLUMNS CONTENTS ===
-        #Column 1
+        # Column 1
         self.delete_login_frame = ctk.CTkFrame(self.column_1, fg_color="#2B2B2B")
         self.delete_login_frame.pack(pady=5, padx=10)
-        self.delete_login_label = ctk.CTkLabel(self.delete_login_frame, text="")
-        self.delete_login_label.pack(pady=5, padx=10)
-        self.delete_login_button = ctk.CTkButton(self.delete_login_frame, text="Logout", font=("Poppins", 12), command=lambda: [write_log("Logged out successfully!", type="info"), self.delete_login(), self.safe_close_app()])
+        self.delete_login_button = ctk.CTkButton(self.delete_login_frame, text="Logout", font=("Poppins", 12), command=lambda: [tools.write_log("Logged out successfully!", type="info"), self.delete_login(), self.safe_close_app()])
         self.delete_login_button.pack(pady=5, padx=10)
 
         ## Switches
         # RPC -> CAUTION: self.rpc_var is only used to determine initial RPC switch value
-        memory = load_json(resource_path("data/memory.json"))
+        memory = tools.load_json(tools.resource_path("data/memory.json"))
         settings = memory["settings"]
         self.rpc_var = tk.IntVar(value=1 if settings["RPC"] else 0)
-        self.discord_rpc_switch = ctk.CTkSwitch(self.column_1, text="Discord RPC", onvalue=1, offvalue=0, command=lambda: [write_log(f"[ SETTINGS PRESET] Discord RPC set to {get_switch_value(self.discord_rpc_switch)}", type="info")], variable=self.rpc_var)
+        self.discord_rpc_switch = ctk.CTkSwitch(self.column_1, text="Discord RPC", onvalue=1, offvalue=0, command=lambda: [tools.write_log(f"[ SETTINGS PRESET] Discord RPC set to {tools.get_switch_value(self.discord_rpc_switch)}", type="info")], variable=self.rpc_var)
         self.discord_rpc_switch.pack(pady=5, padx=10)
 
         ### WARNING: This code won't be used for now, keep it commented out :3
@@ -269,35 +270,57 @@ class SettingsPage(ctk.CTkFrame):
         # load_setting("RPC", self.discord_rpc_switch)
         # load_setting("DM", self.dm_notif_switch)
 
-        #Column 2
-        self.export_jobs_frame = ctk.CTkFrame(self.column_2, fg_color="#2B2B2B")
-        self.export_jobs_frame.pack(pady=5, padx=10)
-        self.export_jobs_label = ctk.CTkLabel(self.export_jobs_frame, text="", font=('Poppins', 10, 'italic'))
-        self.export_jobs_label.pack(pady=5, padx=10)
-        self.export_jobs_button = ctk.CTkButton(self.export_jobs_frame, text="Export jobs to CSV", font=("Poppins", 12), command=lambda: [asyncio.run(self.export_to_csv())])
-        self.export_jobs_button.pack(pady=5, padx=10)
+        # Column 2
+        # self.export_jobs_frame = ctk.CTkFrame(self.column_2, fg_color="#2B2B2B")
+        # self.export_jobs_frame.pack(pady=5, padx=10)
+        # self.export_jobs_label = ctk.CTkLabel(self.export_jobs_frame, text="", font=('Poppins', 10, 'italic'))
+        # self.export_jobs_label.pack(pady=5, padx=10)
+        # self.export_jobs_button = ctk.CTkButton(self.export_jobs_frame, text="Export jobs to CSV", font=("Poppins", 12), command=lambda: [asyncio.run(self.export_to_csv())])
+        # self.export_jobs_button.pack(pady=5, padx=10)
 
-        self.save_settings_button = ctk.CTkButton(self.column_2, text="Save Settings", font=("Poppins", 12), command=self.send_settings)
-        self.save_settings_button.pack(pady=5, padx=10)
-
-        #Column 3
-        self.settings_hotkeys_frame = ctk.CTkFrame(self.column_3, fg_color="#2B2B2B")
+        self.settings_hotkeys_frame = ctk.CTkFrame(self.column_2, fg_color="#2B2B2B")
         self.settings_hotkeys_frame.pack(pady=5, padx=10)
-        self.settings_hotkeys_label = ctk.CTkLabel(self.settings_hotkeys_frame, text="")
-        self.settings_hotkeys_label.pack(pady=5, padx=10)
         self.show_hotkeys_button = ctk.CTkButton(self.settings_hotkeys_frame, text="CB Hotkeys", font=("Poppins", 12), command=self.hotkeys_window)
         self.show_hotkeys_button.pack(pady=5, padx=10)
 
+        # Column 3
+        self.save_settings_frame = ctk.CTkFrame(self.column_3, fg_color="#2B2B2B")
+        self.save_settings_frame.pack(pady=5, padx=10)
+        self.save_settings_button = ctk.CTkButton(self.save_settings_frame, text="Save Settings", font=("Poppins", 12), command=self.save_settings_async, fg_color="#00A000", hover_color="#008D00")
+        self.save_settings_button.pack(pady=5, padx=10)
+    
 
-    def send_settings(self):
+    def save_settings_async(self):
+        threading.Thread(target=self._run_async_save, daemon=True).start()
+
+
+    def _run_async_save(self):
+        asyncio.run(self.send_settings())
+
+
+    async def send_settings(self):
+            self.save_settings_button.configure(text="Processing...")
+            self.save_settings_button.update()
             s = {
-                "RPC": get_switch_value(self.discord_rpc_switch)
+                "RPC": tools.get_switch_value(self.discord_rpc_switch)
             }
-            success = save_settings(s)
-            if not success:
-                self.show_error("Couldn't save new settings.")
+
+            memory = tools.load_json("data/memory.json")
+            current_settings = memory["settings"]
+
+            if s != current_settings:
+                success = await settings.save(s)
+                if not success:
+                    self.show_error("Couldn't save new settings.")
+                else:
+                    self.show_success("Settings saved!")
+                self.save_settings_button.configure(text="Save Settings")
+                self.save_settings_button.update()
+
             else:
-                self.show_success("Settings saved!")
+                self.show_error("Settings already saved.")
+                self.save_settings_button.configure(text="Save Settings")
+                self.save_settings_button.update()
 
 
     def show_error(self, message: str):
@@ -333,33 +356,26 @@ class SettingsPage(ctk.CTkFrame):
         )
 
         if file_path:
-            self.export_jobs_label.configure(text="Processing...")
-            self.export_jobs_label.update()
             with open(file_path, "w") as file:
-                user_data = load_json(resource_path("data/user.json"))
-                userID = user_data["id"]
+                            
+                success, headers, content = await api.get_job_export()
 
-                payload = {"id": userID}               
-                req = requests.get(f"{API_URL}/tracker/deliveries/export", json=payload)
-                    
-                if req.headers["X-Error"] == "True":
-                    write_log(req.headers["X-Error-Message"])
-                    self.export_jobs_label.configure(text="An error occured, please try again later.", type="error")
-                    self.export_jobs_label.update()
-                    await asyncio.sleep(10)
-                    self.export_jobs_label.configure(text="")
-                    self.export_jobs_label.update()
+                if success:
+                    if headers["X-Error"] == "True":
+                        tools.write_log(headers["X-Error-Message"], type="error")
+                        self.show_error("Couldn't export jobs to CSV.")
+                    else:
+                        with open(f'{file_path}', 'wb') as f:
+                            f.write(content)
+
+                        message = f"Jobs exported successfully \nto {file_path}"
+                        tools.write_log(message)
+                        self.show_success(message)
+
                 else:
-                    with open(f'{file_path}', 'wb') as f:
-                        f.write(req.content)
-
-                    message = f"Jobs exported successfully \nto {file_path}"
-                    write_log(message)
-                    self.export_jobs_label.configure(text=message)
-                    self.export_jobs_label.update()
-                    await asyncio.sleep(10)
-                    self.export_jobs_label.configure(text="")
-                    self.export_jobs_label.update()
+                    message = "Interaction with the API has failed"
+                    tools.write_log(message)
+                    self.show_error(message)
 
 
     def hotkeys_window(self):
@@ -387,35 +403,32 @@ class SettingsPage(ctk.CTkFrame):
         """
         Load the changelog from local.
         """
-        with open(resource_path("properties/infos.json"), 'r') as f:
+        with open(tools.resource_path("properties/infos.json"), 'r') as f:
             infos = json.load(f)
         return infos
     
+
     def delete_login(self):
         new_data = {"id": 0,
                     "username": "",
                     "steamID64": 0,
                     "discordID": 0,
                     "encrypted_password": ""}
-        save_json(new_data, resource_path("data/user.json"))
+        tools.save_json(new_data, tools.resource_path("data/user.json"))
+
 
     def safe_close_app(self):
         try:
             global tracking_disabled
             tracking_disabled = True
-            if hasattr(self, "stop_tracking"):
-                self.stop_tracking()
-            if hasattr(self, "rpc"):
-                self.rpc.stop()
             time.sleep(0.5)
-            write_log("Application closed cleanly")
+            tools.write_log("Application closed cleanly")
             self.destroy()
         except Exception as e:
-            write_log(f"Application closed with error: {e}", type="error")
+            tools.write_log(f"Application closed with error: {e}", type="error")
         sys.exit()
 
             
-
 
 class InfosPage(ctk.CTkFrame):
     """
@@ -433,7 +446,7 @@ class InfosPage(ctk.CTkFrame):
         self.main_frame.pack(pady=10, fill="both", expand=True)
 
         # Get infos dictionary
-        infos = self.load_infos()
+        infos = tools.load_json("properties/infos.json")
         
         # Version heading
         self.infos_heading_label = ctk.CTkLabel(self.main_frame, text=infos["version"], font=('Poppins', 20, 'italic'))
@@ -450,14 +463,14 @@ class InfosPage(ctk.CTkFrame):
         self.how_to_install_text.pack(pady=5, padx=10, fill="x", expand=True)
 
         # === HOW TO USE SECTION ===
-        self.how_to_use_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
-        self.how_to_use_frame.pack(pady=5, padx=10, fill="x")
+        # self.how_to_use_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
+        # self.how_to_use_frame.pack(pady=5, padx=10, fill="x")
 
-        self.how_to_use_heading = ctk.CTkLabel(self.how_to_use_frame, text="How to use", font=("Poppins", 20, "bold"))
-        self.how_to_use_heading.pack(pady=5, padx=10)
+        # self.how_to_use_heading = ctk.CTkLabel(self.how_to_use_frame, text="How to use", font=("Poppins", 20, "bold"))
+        # self.how_to_use_heading.pack(pady=5, padx=10)
 
-        self.how_to_use_text = ctk.CTkLabel(self.how_to_use_frame, text=infos["how_to_use"], font=("Poppins", 16), wraplength=550,  justify="left", anchor="w")
-        self.how_to_use_text.pack(pady=5, padx=10, fill="x", expand=True)
+        # self.how_to_use_text = ctk.CTkLabel(self.how_to_use_frame, text=infos["how_to_use"], font=("Poppins", 16), wraplength=550,  justify="left", anchor="w")
+        # self.how_to_use_text.pack(pady=5, padx=10, fill="x", expand=True)
 
         # === CHANGELOG SECTION ===
         self.changelog_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
@@ -477,11 +490,12 @@ class InfosPage(ctk.CTkFrame):
         self.changelog_text = ctk.CTkLabel(self.changelog_frame, text=changelog_text,font=("Poppins", 16), wraplength=600, justify="left", anchor="w")
         self.changelog_text.pack(pady=5, padx=10, fill="x", expand=True)
 
-    def load_infos(self):
-        """
-        Load the changelog from local.
-        """
-        with open(resource_path("properties/infos.json"), 'r') as f:
-            infos = json.load(f)
-        return infos
+
+    # def load_infos(self):
+    #     """
+    #     Load the changelog from local.
+    #     """
+    #     with open(tools.resource_path("properties/infos.json"), 'r') as f:
+    #         infos = json.load(f)
+    #     return infos
 

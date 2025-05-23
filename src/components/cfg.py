@@ -1,1 +1,0 @@
-API_URL = "https://api-kaelysvirtual.onrender.com"
