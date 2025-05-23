@@ -299,28 +299,28 @@ class SettingsPage(ctk.CTkFrame):
 
 
     async def send_settings(self):
-            self.save_settings_button.configure(text="Processing...")
-            self.save_settings_button.update()
-            s = {
-                "RPC": tools.get_switch_value(self.discord_rpc_switch)
-            }
+        self.save_settings_button.configure(text="Processing...")
+        self.save_settings_button.update()
+        s = {
+            "RPC": tools.get_switch_value(self.discord_rpc_switch)
+        }
 
-            memory = tools.load_json("data/memory.json")
-            current_settings = memory["settings"]
+        memory = tools.load_json("data/memory.json")
+        current_settings = memory["settings"]
 
-            if s != current_settings:
-                success = await settings.save(s)
-                if not success:
-                    self.show_error("Couldn't save new settings.")
-                else:
-                    self.show_success("Settings saved!")
-                self.save_settings_button.configure(text="Save Settings")
-                self.save_settings_button.update()
-
+        if s != current_settings:
+            success = await settings.save(s)
+            if not success:
+                self.show_error("Couldn't save new settings.")
             else:
-                self.show_error("Settings already saved.")
-                self.save_settings_button.configure(text="Save Settings")
-                self.save_settings_button.update()
+                self.show_success("Settings saved!")
+            self.save_settings_button.configure(text="Save Settings")
+            self.save_settings_button.update()
+
+        else:
+            self.show_error("Settings already saved.")
+            self.save_settings_button.configure(text="Save Settings")
+            self.save_settings_button.update()
 
 
     def show_error(self, message: str):
