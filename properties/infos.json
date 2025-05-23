@@ -1,8 +1,8 @@
 {
-    "version": "v.11-05-2025",
+    "version": "v.23-05-2025 internal",
     "how_to_install": "*Place the scs-telemtry.dll file in this folder:\n'C:\\Programs (x86)\\Steam\\steamapps\\common\\Euro Truck Simulator 2 or American Truck Simulator\\bin\\win_x64\\plugins'",
     "how_to_use": "*Launch ktrack.exe and start the tracking when the game is launched.\n*Your KaelysHUB credentials are required.\n*Make sure to launch the app every time you want to track you deliveries.",
-    "changelog": ["- Major backend update for performance improvement", "- New setting to enable/disable Discord"],
+    "changelog": ["- Major backend update for performance improvement", "- New setting to enable/disable Discord", "- Removed CB job events", "- Minor other changes"],
     "hotkeys": [
         "Ctrl+1: Start driving",
         "Ctrl+2: Stop for fuel",
