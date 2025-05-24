@@ -252,7 +252,7 @@ class SettingsPage(ctk.CTkFrame):
         # Column 1
         self.delete_login_frame = ctk.CTkFrame(self.column_1, fg_color="#2B2B2B")
         self.delete_login_frame.pack(pady=5, padx=10)
-        self.delete_login_button = ctk.CTkButton(self.delete_login_frame, text="Logout", font=("Poppins", 12), command=lambda: [tools.write_log("Logged out successfully!", type="info"), self.delete_login(), self.safe_close_app()])
+        self.delete_login_button = ctk.CTkButton(self.delete_login_frame, state="disabled", text="Logout", font=("Poppins", 12), command=lambda: [tools.write_log("Logged out successfully!", type="info"), self.delete_login(), self.safe_close_app()], fg_color="darkred")
         self.delete_login_button.pack(pady=5, padx=10)
 
         ## Switches
@@ -286,41 +286,37 @@ class SettingsPage(ctk.CTkFrame):
         # Column 3
         self.save_settings_frame = ctk.CTkFrame(self.column_3, fg_color="#2B2B2B")
         self.save_settings_frame.pack(pady=5, padx=10)
-        self.save_settings_button = ctk.CTkButton(self.save_settings_frame, text="Save Settings", font=("Poppins", 12), command=self.save_settings_async, fg_color="#00A000", hover_color="#008D00")
+        self.save_settings_button = ctk.CTkButton(self.save_settings_frame, text="Save Settings", font=("Poppins", 12), command=self.send_settings, fg_color="#00A000", hover_color="#008D00")
         self.save_settings_button.pack(pady=5, padx=10)
-    
-
-    def save_settings_async(self):
-        threading.Thread(target=self._run_async_save, daemon=True).start()
 
 
-    def _run_async_save(self):
-        asyncio.run(self.send_settings())
+    def send_settings(self):
+        try:
+            self.save_settings_button.configure(text="Processing...")
+            self.save_settings_button.update()
+            s = {
+                "RPC": tools.get_switch_value(self.discord_rpc_switch)
+            }
 
+            memory = tools.load_json(tools.resource_path("data/memory.json"))
+            current_settings = memory["settings"]
 
-    async def send_settings(self):
-        self.save_settings_button.configure(text="Processing...")
-        self.save_settings_button.update()
-        s = {
-            "RPC": tools.get_switch_value(self.discord_rpc_switch)
-        }
+            if s != current_settings:
+                success = asyncio.run(settings.save(s))
+                if not success:
+                    self.show_error("Couldn't save new settings.")
+                else:
+                    self.show_success("Settings saved!")
+                self.save_settings_button.configure(text="Save Settings")
+                self.save_settings_button.update()
 
-        memory = tools.load_json("data/memory.json")
-        current_settings = memory["settings"]
-
-        if s != current_settings:
-            success = await settings.save(s)
-            if not success:
-                self.show_error("Couldn't save new settings.")
             else:
-                self.show_success("Settings saved!")
-            self.save_settings_button.configure(text="Save Settings")
-            self.save_settings_button.update()
-
-        else:
-            self.show_error("Settings already saved.")
-            self.save_settings_button.configure(text="Save Settings")
-            self.save_settings_button.update()
+                self.show_error("Settings already saved.")
+                self.save_settings_button.configure(text="Save Settings")
+                self.save_settings_button.update()
+            
+        except Exception as e:
+            tools.write_log(f"Couldn't save settings: {e}", type="error")
 
 
     def show_error(self, message: str):
@@ -379,7 +375,7 @@ class SettingsPage(ctk.CTkFrame):
 
 
     def hotkeys_window(self):
-        infos = self.load_infos()
+        infos = tools.load_json(tools.resource_path("properties/infos.json"))
 
         hotkeys_window = ctk.CTkToplevel()
         hotkeys_window.geometry("400x200")
@@ -397,15 +393,6 @@ class SettingsPage(ctk.CTkFrame):
         self.close_button = ctk.CTkButton(self.hotkeys_frame, text="Close", command=hotkeys_window.destroy).pack(pady=10)
 
         hotkeys_window.grab_set()
-
-
-    def load_infos(self):
-        """
-        Load the changelog from local.
-        """
-        with open(tools.resource_path("properties/infos.json"), 'r') as f:
-            infos = json.load(f)
-        return infos
     
 
     def delete_login(self):
@@ -437,59 +424,62 @@ class InfosPage(ctk.CTkFrame):
     def __init__(self, master=None, *args, **kwargs):
         super().__init__(master, fg_color="transparent", *args, **kwargs)
 
-        # === INFOS LABEL ===
-        self.infos_label = ctk.CTkLabel(self, text="Infos", font=("Poppins", 20, "italic"))
-        self.infos_label.pack(pady=2)
+        try:
+            # === INFOS LABEL ===
+            self.infos_label = ctk.CTkLabel(self, text="Infos", font=("Poppins", 20, "italic"))
+            self.infos_label.pack(pady=2)
 
-        # === FRAME PRINCIPAL ===
-        self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.main_frame.pack(pady=10, fill="both", expand=True)
+            # === FRAME PRINCIPAL ===
+            self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
+            self.main_frame.pack(pady=10, fill="both", expand=True)
 
-        # Get infos dictionary
-        infos = tools.load_json("properties/infos.json")
-        
-        # Version heading
-        self.infos_heading_label = ctk.CTkLabel(self.main_frame, text=infos["version"], font=('Poppins', 20, 'italic'))
-        self.infos_heading_label.pack(pady=(0, 10))
-
-        # === HOW TO INSTALL SECTION ===
-        self.how_to_install_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
-        self.how_to_install_frame.pack(pady=5, padx=10, fill="x")
-
-        self.how_to_install_heading = ctk.CTkLabel(self.how_to_install_frame, text="How to install", font=("Poppins", 20, "bold"))
-        self.how_to_install_heading.pack(pady=5, padx=10)
-
-        self.how_to_install_text = ctk.CTkLabel(self.how_to_install_frame, text=infos["how_to_install"], font=("Poppins", 16), wraplength=550, justify="left", anchor="w")
-        self.how_to_install_text.pack(pady=5, padx=10, fill="x", expand=True)
-
-        # === HOW TO USE SECTION ===
-        # self.how_to_use_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
-        # self.how_to_use_frame.pack(pady=5, padx=10, fill="x")
-
-        # self.how_to_use_heading = ctk.CTkLabel(self.how_to_use_frame, text="How to use", font=("Poppins", 20, "bold"))
-        # self.how_to_use_heading.pack(pady=5, padx=10)
-
-        # self.how_to_use_text = ctk.CTkLabel(self.how_to_use_frame, text=infos["how_to_use"], font=("Poppins", 16), wraplength=550,  justify="left", anchor="w")
-        # self.how_to_use_text.pack(pady=5, padx=10, fill="x", expand=True)
-
-        # === CHANGELOG SECTION ===
-        self.changelog_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
-        self.changelog_frame.pack(pady=5, padx=10, fill="x")
-
-        self.changelog_heading = ctk.CTkLabel(self.changelog_frame, text="Changelog", font=("Poppins", 20, "bold"))
-        self.changelog_heading.pack(pady=5, padx=10)
-
-        changelog_text = ""
-        if isinstance(infos["changelog"], list):
-            # Join list items with newlines if changelog is a list
-            changelog_text = "\n".join(infos["changelog"])
-        else:
-            # Use as is if it's already a string
-            changelog_text = infos["changelog"]
+            # Get infos dictionary
+            infos = tools.load_json(tools.resource_path("properties/infos.json"))
             
-        self.changelog_text = ctk.CTkLabel(self.changelog_frame, text=changelog_text,font=("Poppins", 16), wraplength=600, justify="left", anchor="w")
-        self.changelog_text.pack(pady=5, padx=10, fill="x", expand=True)
+            # Version heading
+            self.infos_heading_label = ctk.CTkLabel(self.main_frame, text=infos["version"], font=('Poppins', 20, 'italic'))
+            self.infos_heading_label.pack(pady=(0, 10))
 
+            # === HOW TO INSTALL SECTION ===
+            self.how_to_install_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
+            self.how_to_install_frame.pack(pady=5, padx=10, fill="x")
+
+            self.how_to_install_heading = ctk.CTkLabel(self.how_to_install_frame, text="How to install", font=("Poppins", 20, "bold"))
+            self.how_to_install_heading.pack(pady=5, padx=10)
+
+            self.how_to_install_text = ctk.CTkLabel(self.how_to_install_frame, text=infos["how_to_install"], font=("Poppins", 16), wraplength=550, justify="left", anchor="w")
+            self.how_to_install_text.pack(pady=5, padx=10, fill="x", expand=True)
+
+            # === HOW TO USE SECTION ===
+            # self.how_to_use_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
+            # self.how_to_use_frame.pack(pady=5, padx=10, fill="x")
+
+            # self.how_to_use_heading = ctk.CTkLabel(self.how_to_use_frame, text="How to use", font=("Poppins", 20, "bold"))
+            # self.how_to_use_heading.pack(pady=5, padx=10)
+
+            # self.how_to_use_text = ctk.CTkLabel(self.how_to_use_frame, text=infos["how_to_use"], font=("Poppins", 16), wraplength=550,  justify="left", anchor="w")
+            # self.how_to_use_text.pack(pady=5, padx=10, fill="x", expand=True)
+
+            # === CHANGELOG SECTION ===
+            self.changelog_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
+            self.changelog_frame.pack(pady=5, padx=10, fill="x")
+
+            self.changelog_heading = ctk.CTkLabel(self.changelog_frame, text="Changelog", font=("Poppins", 20, "bold"))
+            self.changelog_heading.pack(pady=5, padx=10)
+
+            changelog_text = ""
+            if isinstance(infos["changelog"], list):
+                # Join list items with newlines if changelog is a list
+                changelog_text = "\n".join(infos["changelog"])
+            else:
+                # Use as is if it's already a string
+                changelog_text = infos["changelog"]
+                
+            self.changelog_text = ctk.CTkLabel(self.changelog_frame, text=changelog_text,font=("Poppins", 16), wraplength=600, justify="left", anchor="w")
+            self.changelog_text.pack(pady=5, padx=10, fill="x", expand=True)
+
+        except Exception as e:
+            tools.write_log(f"Error displaying Infos page: {e}", type="error")
 
     # def load_infos(self):
     #     """
