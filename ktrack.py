@@ -43,29 +43,33 @@ def game_notif(message: str, delay=5000):
 class LoginWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
-        self.title("KaelysTrack")
-        self.geometry("600x400")
-        #self.iconbitmap(resource_path("src/static/ktrack.ico")) changed to self.iconphoto for better compatibility (Ln 46 and 164)
-        icon_path = tools.resource_path("src/static/ktrack.png")
-        icon_image = Image.open(icon_path)
-        icon_photo = ImageTk.PhotoImage(icon_image)
-        self.iconphoto(True, icon_photo)
-        ctk.set_appearance_mode("Dark")
-        ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
-        self.resizable(False, False)
-        self.protocol("WM_DELETE_WINDOW", lambda: None)
+        try:
+            self.title("KaelysTrack")
+            self.geometry("600x400")
+            #self.iconbitmap(resource_path("src/static/ktrack.ico")) changed to self.iconphoto for better compatibility (Ln 46 and 164)
+            icon_path = tools.resource_path("src/static/ktrack.png")
+            icon_image = Image.open(icon_path)
+            icon_photo = ImageTk.PhotoImage(icon_image)
+            self.iconphoto(True, icon_photo)
+            ctk.set_appearance_mode("Dark")
+            ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
+            self.resizable(False, False)
+            self.protocol("WM_DELETE_WINDOW", lambda: None)
 
-        # if self.auto_login():
-        #     return
+            # if self.auto_login():
+            #     return
 
-        self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
-                                          command=self.on_close,
-                                          fg_color="darkred", hover_color="red")
-        self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
-        self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
-        self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
+            self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
+                                            command=self.on_close,
+                                            fg_color="darkred", hover_color="red")
+            self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
+            self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
+            self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
 
-        self.setup_ui()
+            self.setup_ui()
+        
+        except Exception as e:
+            tools.write_log(f"Couldn't launch LoginWindow: {e}")
 
 
     # def auto_login(self):
@@ -191,44 +195,48 @@ class MainWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         # INIT SETTINGS
-        success = asyncio.run(settings.load())
-        if not success:
-            self.show_error("CRITICAL: Couldn't load settings. Aborting startup.")
-            return
+        try:
+            success = asyncio.run(settings.load())
+            if not success:
+                self.show_error("CRITICAL: Couldn't load settings. Aborting startup.")
+                sys.exit()
+                return
 
-        # BUILD APP
-        self.title("KaelysTrack")
-        self.geometry("700x700")
-        #self.iconbitmap(resource_path("src/static/ktrack.ico"))
-        icon_path = tools.resource_path("src/static/ktrack.png")
-        icon_image = Image.open(icon_path)
-        icon_photo = ImageTk.PhotoImage(icon_image)
-        self.iconphoto(False, icon_photo)
-        ctk.set_appearance_mode("Dark")
-        ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
-        self.user_data = tools.load_json(tools.resource_path("data/user.json"))
-        self.resizable(False, False)
-        self.protocol("WM_DELETE_WINDOW", lambda: None)
+            # BUILD APP
+            self.title("KaelysTrack")
+            self.geometry("700x700")
+            self.iconbitmap(tools.resource_path("src/static/ktrack.ico"))
+            # icon_path = tools.resource_path("src/static/ktrack.png") -> Disabled because not working
+            # icon_image = Image.open(icon_path)
+            # icon_photo = ImageTk.PhotoImage(icon_image)
+            # self.iconphoto(False, icon_photo)
+            ctk.set_appearance_mode("Dark")
+            ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
+            self.user_data = tools.load_json(tools.resource_path("data/user.json"))
+            self.resizable(False, False)
+            self.protocol("WM_DELETE_WINDOW", lambda: None)
 
-        self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
-                                          command=self.on_close, 
-                                          fg_color="darkred", hover_color="red")
-        self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
-        self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
-        self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
+            self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
+                                            command=self.on_close, 
+                                            fg_color="darkred", hover_color="red")
+            self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
+            self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
+            self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
 
-        self.stop_event = threading.Event()
-        self.stop_event.set()
+            self.stop_event = threading.Event()
+            self.stop_event.set()
 
-        # DISCORD RPC
-        self.rpc = dinteg.RichPresence()
-        self.rpc_thread = threading.Thread(target=self.rpc.run_loop, daemon=True)
-        self.rpc_thread.start()
+            # DISCORD RPC
+            self.rpc = dinteg.RichPresence()
+            self.rpc_thread = threading.Thread(target=self.rpc.run_loop, daemon=True)
+            self.rpc_thread.start()
 
-        self.setup_ui()
+            self.setup_ui()
 
-        self.start_key_listener()
+            self.start_key_listener()
 
+        except Exception as e:
+            tools.write_log(f"Couldn't launch MainWindow: {e}")
 
 
     ### CLOSE APP
@@ -572,5 +580,4 @@ if __name__ == "__main__":
     tools.save_txt("", tools.resource_path("crash.txt"))
     app = LoginWindow()
     app.mainloop()
-    keyboard.wait('41')
 
