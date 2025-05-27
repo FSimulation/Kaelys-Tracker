@@ -24,6 +24,7 @@ ENCRYPTION_KEY = b'GHq79RDXt6UoVUK44gutkHQOg1zKIH50UYTrKdGkCXI='
 cipher = Fernet(ENCRYPTION_KEY)
 
 
+
 def game_notif(message: str, delay=5000):
     notif = ctk.CTkToplevel()
     notif.overrideredirect(True)
@@ -206,6 +207,14 @@ class MainWindow(ctk.CTk):
             self.title("KaelysTrack")
             self.geometry("700x700")
             self.iconbitmap(tools.resource_path("src/static/ktrack.ico"))
+
+            # BOTTOM LEFT TEXT
+            # infos = tools.load_json(tools.resource_path("properties/infos.json"))
+            # version = infos["version"]
+            # self.version_label = ctk.CTkLabel(self, text=f"KaelysTrack {version}")
+            # self.version_label.place(relx=0.0, rely=1.0, anchor="nw")
+            # self.version_label.lift()
+
             # icon_path = tools.resource_path("src/static/ktrack.png") -> Disabled because not working
             # icon_image = Image.open(icon_path)
             # icon_photo = ImageTk.PhotoImage(icon_image)
@@ -237,6 +246,7 @@ class MainWindow(ctk.CTk):
 
         except Exception as e:
             tools.write_log(f"Couldn't launch MainWindow: {e}")
+
 
 
     ### CLOSE APP
@@ -444,13 +454,12 @@ class MainWindow(ctk.CTk):
         # WELCOME & VERSION LABELS
         self.welcome_label = ctk.CTkLabel(self, text=f'Welcome, {self.user_data["username"]}!', font=("Poppins", 20, "italic"))
         self.welcome_label.pack(pady=10)
-        self.version_label = ctk.CTkLabel(master=self, text="version 09-05-2025", text_color="gray")
-        self.version_label.place(relx=0.01, rely=1.0, anchor="sw")  # En bas à gauche
 
         ## TAB VIEW
         self.tabview = ctk.CTkTabview(self, width=580, height=360)
         self.tabview.pack(padx=10, pady=10, fill="both", expand=True)
 
+        # TABS
         self.tabview.add("Home")
         self.infos_warning_label = ctk.CTkLabel(self.tabview.tab("Home"), text="ⓘ  Informations displayed on this page are updated every 30 seconds.", text_color="grey", font=("Poppins", 10, "bold"))
         self.infos_warning_label.pack(pady=2)
@@ -458,7 +467,6 @@ class MainWindow(ctk.CTk):
         self.game_status.pack(pady=2, padx=2)
 
         self.tabview.add("Settings")
-
         self.tabview.add("Infos")
 
         ### HOME TAB
@@ -578,6 +586,6 @@ class MainWindow(ctk.CTk):
 if __name__ == "__main__":
     tools.save_txt("", tools.resource_path("logs.txt"))
     tools.save_txt("", tools.resource_path("crash.txt"))
-    app = LoginWindow()
+    app = MainWindow()
     app.mainloop()
 
