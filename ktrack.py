@@ -33,7 +33,7 @@ def game_notif(message: str, delay=5000):
     width, height = 250, 100
     notif.geometry(f"{width}x{height}+10+10")
 
-    ctk.CTkLabel(notif, text="KaelysTrack", font=ctk.CTkFont(size=12)).pack(pady=2)
+    ctk.CTkLabel(notif, text="MyKaelys Client", font=ctk.CTkFont(size=12)).pack(pady=2)
     ctk.CTkLabel(notif, text=message, font=ctk.CTkFont(size=15, weight="bold")).pack(pady=2)
 
     notif.after(delay, notif.destroy)
@@ -45,7 +45,8 @@ class LoginWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         try:
-            self.title("KaelysTrack")
+            self.title("MyKaelys Client - Login")
+            # self.configure(fg_color="#2d4d66")
             self.geometry("600x400")
             #self.iconbitmap(resource_path("src/static/ktrack.ico")) changed to self.iconphoto for better compatibility (Ln 46 and 164)
             icon_path = tools.resource_path("src/static/ktrack.png")
@@ -53,24 +54,26 @@ class LoginWindow(ctk.CTk):
             icon_photo = ImageTk.PhotoImage(icon_image)
             self.iconphoto(True, icon_photo)
             ctk.set_appearance_mode("Dark")
-            ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
+            # ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
             self.resizable(False, False)
-            self.protocol("WM_DELETE_WINDOW", lambda: None)
+            self.protocol("WM_DELETE_WINDOW", self.on_close)
 
             # if self.auto_login():
             #     return
 
-            self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
-                                            command=self.on_close,
-                                            fg_color="darkred", hover_color="red")
-            self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
-            self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
-            self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
+            # self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
+            #                                 command=self.on_close,
+            #                                 fg_color="darkred", hover_color="red")
+            # self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
+            # self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
+            # self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
 
             self.setup_ui()
         
         except Exception as e:
             tools.write_log(f"Couldn't launch LoginWindow: {e}")
+            # tools.write_log("Offline mode request awaiting...")
+            # self.show_offline_request()
 
 
     # def auto_login(self):
@@ -106,14 +109,23 @@ class LoginWindow(ctk.CTk):
             tools.write_log(f"Application closed with error: {e}", type="error")
         sys.exit()
 
+    
+    def show_offline_request(self):
+        self.request_window = ctk.CTkToplevel()
+        self.request_window.geometry("300x150")
+        self.request_window.title("Error")
+        self.request_window.resizable(False, False)
+
+        self.offline_title = ctk.CTkLabel(self.request_window, text="Couldn't connect with the API", text_color="red", font=("Poppins", 15, "italic")).pack(pady=5)
+        self.offline_text = ctk.CTkLabel(self.request_window, text="Would you like to enable offline mode? \nYou won't need to login and your deliveries will be recorded locally.", wraplength=250).pack(pady=5)
+        
+        self.offline_confirm_button = ctk.CTkButton(self.request_window, text="Enable offline mode", command=lambda: [self.request_window.destroy(),
+                                                                                                                      self.destroy(),
+                                                                                                                      MainWindow(offline_mode=True).mainloop()
+                                                                                                                      ]).pack(pady=10)
+
 
     def setup_ui(self):
-        image_path = tools.resource_path("src/static/LoginBanner.png")
-        pil_image = Image.open(image_path)
-        image = ctk.CTkImage(size=(250, 140), light_image=pil_image)
-        image_label = ctk.CTkLabel(self, image=image, text="")
-        image_label.pack(pady=10)
-
         # API CHECK
         status = asyncio.run(api.get_status())
         if status == 200:
@@ -121,15 +133,22 @@ class LoginWindow(ctk.CTk):
         else:
             self.api_status = "OFFLINE"
 
-        self.api_check_label = ctk.CTkLabel(self, text="API check", font=("Poppins", 12))
-        self.api_check_label.pack(pady=0)
-
         if self.api_status == "ONLINE":
             self.api_state_label = ctk.CTkLabel(self, text="ONLINE", font=("Poppins", 12), text_color="green")
         # elif self.api_status == "DISABLED":
         #     self.api_state_label = ctk.CTkLabel(self, text="MAINTENANCE", font=("Poppins", 12), text_color="yellow")
         elif self.api_status == "OFFLINE":
             self.api_state_label = ctk.CTkLabel(self, text="OFFLINE", font=("Poppins", 12), text_color="red")
+            self.show_offline_request()
+
+        image_path = tools.resource_path("src/static/LoginBanner.png")
+        pil_image = Image.open(image_path)
+        image = ctk.CTkImage(size=(250, 140), light_image=pil_image)
+        image_label = ctk.CTkLabel(self, image=image, text="")
+        image_label.pack(pady=10)
+
+        self.api_check_label = ctk.CTkLabel(self, text="API check", font=("Poppins", 12))
+        self.api_check_label.pack(pady=0)
 
         self.api_state_label.pack(pady=0)
 
@@ -147,9 +166,14 @@ class LoginWindow(ctk.CTk):
         if not self.api_status == "OFFLINE":
             self.login_button.configure(text="Loading...")
             self.login_button.update()
+
+            properties = tools.load_json(tools.resource_path("properties/infos.json"))
+            version = properties["version"]
+
             creds = {
                 "username": self.username.get(),
-                "password": self.password.get()
+                "password": self.password.get(),
+                "version": version
             }
             data = asyncio.run(api.get("/tracker/login", creds))
             if data["error"]:
@@ -168,8 +192,7 @@ class LoginWindow(ctk.CTk):
 
                 tools.save_json(user_data, tools.resource_path("data/user.json"))
                 self.destroy()
-                self.main_window = MainWindow()
-                self.main_window.mainloop()
+                MainWindow().mainloop()
         
         else:
             self.show_error("The API is not available. Please try again later.")
@@ -191,62 +214,92 @@ class LoginWindow(ctk.CTk):
 
 
 
-
 class MainWindow(ctk.CTk):
-    def __init__(self):
+    def __init__(self, offline_mode: bool = False):
         super().__init__()
         # INIT SETTINGS
         try:
-            success = asyncio.run(settings.load())
-            if not success:
-                self.show_error("CRITICAL: Couldn't load settings. Aborting startup.")
-                sys.exit()
-                return
-
-            # BUILD APP
-            self.title("KaelysTrack")
-            self.geometry("700x700")
-            self.iconbitmap(tools.resource_path("src/static/ktrack.ico"))
-
-            # BOTTOM LEFT TEXT
-            # infos = tools.load_json(tools.resource_path("properties/infos.json"))
-            # version = infos["version"]
-            # self.version_label = ctk.CTkLabel(self, text=f"KaelysTrack {version}")
-            # self.version_label.place(relx=0.0, rely=1.0, anchor="nw")
-            # self.version_label.lift()
-
-            # icon_path = tools.resource_path("src/static/ktrack.png") -> Disabled because not working
-            # icon_image = Image.open(icon_path)
-            # icon_photo = ImageTk.PhotoImage(icon_image)
-            # self.iconphoto(False, icon_photo)
-            ctk.set_appearance_mode("Dark")
-            ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
-            self.user_data = tools.load_json(tools.resource_path("data/user.json"))
-            self.resizable(False, False)
-            self.protocol("WM_DELETE_WINDOW", lambda: None)
-
-            self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
-                                            command=self.on_close, 
-                                            fg_color="darkred", hover_color="red")
-            self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
-            self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
-            self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
-
-            self.stop_event = threading.Event()
-            self.stop_event.set()
-
-            # DISCORD RPC
-            self.rpc = dinteg.RichPresence()
-            self.rpc_thread = threading.Thread(target=self.rpc.run_loop, daemon=True)
-            self.rpc_thread.start()
-
-            self.setup_ui()
-
-            self.start_key_listener()
+            if not offline_mode:
+                self.normal_mode()
+            else:
+                pass
+                # self.offline_mode()
 
         except Exception as e:
-            tools.write_log(f"Couldn't launch MainWindow: {e}")
+            tools.write_log(f"Couldn't build MainWindow(): {e}")
 
+
+    def normal_mode(self):
+        success = asyncio.run(settings.load())
+        if not success:
+            self.show_error("CRITICAL: Couldn't load settings. Aborting startup.")
+            sys.exit()
+            return
+
+        # BUILD APP
+        # self.configure(fg_color="#2d4d66")
+        self.title("MyKaelys Client")
+        self.geometry("700x700")
+        icon_path = tools.resource_path("src/static/ktrack.png")
+        icon_image = Image.open(icon_path)
+        icon_photo = ImageTk.PhotoImage(icon_image)
+        self.iconphoto(True, icon_photo)
+
+        # BOTTOM LEFT TEXT
+        # infos = tools.load_json(tools.resource_path("properties/infos.json"))
+        # version = infos["version"]
+        # self.version_label = ctk.CTkLabel(self, text=f"KaelysTrack {version}")
+        # self.version_label.place(relx=0.0, rely=1.0, anchor="nw")
+        # self.version_label.lift()
+
+        # icon_path = tools.resource_path("src/static/ktrack.png") -> Disabled because not working
+        # icon_image = Image.open(icon_path)
+        # icon_photo = ImageTk.PhotoImage(icon_image)
+        # self.iconphoto(False, icon_photo)
+        ctk.set_appearance_mode("Dark")
+        # ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
+        self.user_data = tools.load_json(tools.resource_path("data/user.json"))
+        self.resizable(False, False)
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+        # self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
+        #                                     command=self.on_close, 
+        #                                     fg_color="darkred", hover_color="red")
+        # self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
+        # self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
+        # self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
+
+        self.stop_event = threading.Event()
+        self.stop_event.set()
+
+        # DISCORD RPC
+        self.rpc = dinteg.RichPresence()
+        self.rpc_thread = threading.Thread(target=self.rpc.run_loop, daemon=True)
+        self.rpc_thread.start()
+
+        self.setup_ui()
+
+        self.start_key_listener()
+
+
+    # def offline_mode(self):
+    #     self.title("KaelysTrack - Offline Mode")
+    #     self.geometry("200x300")
+    #     self.iconbitmap(tools.resource_path("src/static/ktrack.ico"))
+    #     ctk.set_appearance_mode("Dark")
+    #     # ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
+    #     self.user_data = tools.load_json(tools.resource_path("data/user.json"))
+    #     self.resizable(False, False)
+    #     self.protocol("WM_DELETE_WINDOW", self.on_close)
+
+    #     # self.close_button = ctk.CTkButton(self, text="✖ Leave KaelysTrack", width=30, 
+    #     #                                     command=self.on_close, 
+    #     #                                     fg_color="darkred", hover_color="red")
+    #     # self.close_button.place(relx=1.0, x=-10, y=10, anchor="ne")
+    #     # self.close_button_label = ctk.CTkLabel(self, text="Standard X button has been disabled.", text_color="grey", font=("Poppins", 7, "bold"))
+    #     # self.close_button_label.place(relx=1.0, x=-10, y=40, anchor="ne")
+
+    #     # self.setup_ui()
 
 
     ### CLOSE APP
@@ -301,7 +354,7 @@ class MainWindow(ctk.CTk):
         width, height = 250, 80
         notif.geometry(f"{width}x{height}+10+10")
 
-        ctk.CTkLabel(notif, text="KaelysTrack", font=ctk.CTkFont(size=12)).pack(pady=2)
+        ctk.CTkLabel(notif, text="MyKaelys Client", font=ctk.CTkFont(size=12)).pack(pady=2)
         ctk.CTkLabel(notif, text=message, font=ctk.CTkFont(size=15, weight="bold")).pack(pady=2)
 
         notif.after(delay, notif.destroy)
@@ -461,13 +514,13 @@ class MainWindow(ctk.CTk):
 
         # TABS
         self.tabview.add("Home")
-        self.infos_warning_label = ctk.CTkLabel(self.tabview.tab("Home"), text="ⓘ  Informations displayed on this page are updated every 30 seconds.", text_color="grey", font=("Poppins", 10, "bold"))
+        self.infos_warning_label = ctk.CTkLabel(self.tabview.tab("Home"), text="ⓘ Make sure to enable tracking after launching the game.", text_color="grey", font=("Poppins", 10, "bold"))
         self.infos_warning_label.pack(pady=2)
         self.game_status = ctk.CTkLabel(self.tabview.tab("Home"), text="No game running.", text_color="grey", font=("Poppins", 13, "italic"))
         self.game_status.pack(pady=2, padx=2)
 
         self.tabview.add("Settings")
-        self.tabview.add("Infos")
+        self.tabview.add("Informations")
 
         ### HOME TAB
         ## LEFT FRAME
@@ -475,7 +528,7 @@ class MainWindow(ctk.CTk):
             self.tabview.tab("Home"),
             width=280,
             height=300,
-            fg_color="#282828",  # gris foncé
+            fg_color="#263139",  # Dark blue color
             corner_radius=10
         )
         self.frame_left_home.pack(side="left", fill="both", expand=True, padx=(20, 10), pady=10)
@@ -485,7 +538,7 @@ class MainWindow(ctk.CTk):
             self.tabview.tab("Home"),
             width=280,
             height=300,
-            fg_color="#282828",
+            fg_color="#263139",
             corner_radius=10
         )
         self.frame_right_home.pack(side="right", fill="both", expand=True, padx=(10, 20), pady=10)
@@ -509,7 +562,7 @@ class MainWindow(ctk.CTk):
         self.live_drivers_loop.start()
 
         # SEPARATION BAR
-        self.horizontal_bar = ctk.CTkFrame(self.frame_right_home, height=3, width=150, corner_radius=0)
+        self.horizontal_bar = ctk.CTkFrame(self.frame_right_home, height=3, width=150, corner_radius=0, fg_color="#4F4F4F")
         self.horizontal_bar.pack(padx=5, pady=5)
 
         # Tracking Control
@@ -527,7 +580,7 @@ class MainWindow(ctk.CTk):
         self.settings_page.pack(pady=20)
 
         ## INFOS TAB
-        self.infos_page = ui.InfosPage(self.tabview.tab("Infos"))
+        self.infos_page = ui.InfosPage(self.tabview.tab("Informations"))
         self.infos_page.pack(pady=20)
 
 
@@ -586,6 +639,6 @@ class MainWindow(ctk.CTk):
 if __name__ == "__main__":
     tools.save_txt("", tools.resource_path("logs.txt"))
     tools.save_txt("", tools.resource_path("crash.txt"))
-    app = MainWindow()
+    app = LoginWindow()
     app.mainloop()
 

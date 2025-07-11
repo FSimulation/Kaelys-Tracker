@@ -61,7 +61,7 @@ class UserProfile(ctk.CTkFrame):
         self.user_discordID_label.pack(pady=2)
         
         ### SEPARATION BAR
-        self.horizontal_bar = ctk.CTkFrame(self, height=3, width=300, corner_radius=0)
+        self.horizontal_bar = ctk.CTkFrame(self, height=3, width=300, corner_radius=0, fg_color="#4F4F4F")
         self.horizontal_bar.pack(padx=20, pady=20)
 
         ### BOTTOM FRAME
@@ -425,11 +425,7 @@ class InfosPage(ctk.CTkFrame):
         super().__init__(master, fg_color="transparent", *args, **kwargs)
 
         try:
-            # === INFOS LABEL ===
-            self.infos_label = ctk.CTkLabel(self, text="Infos", font=("Poppins", 20, "italic"))
-            self.infos_label.pack(pady=2)
-
-            # === FRAME PRINCIPAL ===
+            # === MAIN FRAME ===
             self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
             self.main_frame.pack(pady=10, fill="both", expand=True)
 
