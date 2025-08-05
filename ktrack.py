@@ -33,7 +33,7 @@ def game_notif(message: str, delay=5000):
     width, height = 250, 100
     notif.geometry(f"{width}x{height}+10+10")
 
-    ctk.CTkLabel(notif, text="MyKaelys Client", font=ctk.CTkFont(size=12)).pack(pady=2)
+    ctk.CTkLabel(notif, text="myKaelys Client", font=ctk.CTkFont(size=12)).pack(pady=2)
     ctk.CTkLabel(notif, text=message, font=ctk.CTkFont(size=15, weight="bold")).pack(pady=2)
 
     notif.after(delay, notif.destroy)
@@ -45,14 +45,14 @@ class LoginWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         try:
-            self.title("MyKaelys Client - Login")
+            self.title("myKaelys Client - Login")
             # self.configure(fg_color="#2d4d66")
-            self.geometry("600x400")
-            #self.iconbitmap(resource_path("src/static/ktrack.ico")) changed to self.iconphoto for better compatibility (Ln 46 and 164)
-            icon_path = tools.resource_path("src/static/ktrack.png")
-            icon_image = Image.open(icon_path)
-            icon_photo = ImageTk.PhotoImage(icon_image)
-            self.iconphoto(True, icon_photo)
+            self.geometry("450x375")
+            self.iconbitmap(tools.resource_path("src/static/ktrack.ico")) #changed to self.iconphoto for better compatibility (Ln 46 and 164)
+            # icon_path = tools.resource_path("src/static/ktrack.png")
+            # icon_image = Image.open(icon_path)
+            # icon_photo = ImageTk.PhotoImage(icon_image)
+            # self.iconphoto(True, icon_photo)
             ctk.set_appearance_mode("Dark")
             # ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
             self.resizable(False, False)
@@ -124,7 +124,6 @@ class LoginWindow(ctk.CTk):
                                                                                                                       MainWindow(offline_mode=True).mainloop()
                                                                                                                       ]).pack(pady=10)
 
-
     def setup_ui(self):
         # API CHECK
         status = asyncio.run(api.get_status())
@@ -143,14 +142,14 @@ class LoginWindow(ctk.CTk):
 
         image_path = tools.resource_path("src/static/LoginBanner.png")
         pil_image = Image.open(image_path)
-        image = ctk.CTkImage(size=(250, 140), light_image=pil_image)
+        image = ctk.CTkImage(size=(300, 85), light_image=pil_image)
         image_label = ctk.CTkLabel(self, image=image, text="")
-        image_label.pack(pady=10)
+        image_label.pack(pady=20)
 
         self.api_check_label = ctk.CTkLabel(self, text="API check", font=("Poppins", 12))
-        self.api_check_label.pack(pady=0)
+        self.api_check_label.pack()
 
-        self.api_state_label.pack(pady=0)
+        self.api_state_label.pack()
 
         self.username = ctk.CTkEntry(self, placeholder_text="Username")
         self.username.pack(pady=10)
@@ -238,12 +237,13 @@ class MainWindow(ctk.CTk):
 
         # BUILD APP
         # self.configure(fg_color="#2d4d66")
-        self.title("MyKaelys Client")
+        self.title("myKaelys Client")
         self.geometry("700x700")
-        icon_path = tools.resource_path("src/static/ktrack.png")
-        icon_image = Image.open(icon_path)
-        icon_photo = ImageTk.PhotoImage(icon_image)
-        self.iconphoto(True, icon_photo)
+        self.iconbitmap(tools.resource_path("src/static/ktrack.ico"))  # Changed to self.iconphoto for better compatibility (Ln 46 and 164)
+        # icon_path = tools.resource_path("src/static/ktrack.png")
+        # icon_image = Image.open(icon_path)
+        # icon_photo = ImageTk.PhotoImage(icon_image)
+        # self.iconphoto(True, icon_photo)
 
         # BOTTOM LEFT TEXT
         # infos = tools.load_json(tools.resource_path("properties/infos.json"))
@@ -354,7 +354,7 @@ class MainWindow(ctk.CTk):
         width, height = 250, 80
         notif.geometry(f"{width}x{height}+10+10")
 
-        ctk.CTkLabel(notif, text="MyKaelys Client", font=ctk.CTkFont(size=12)).pack(pady=2)
+        ctk.CTkLabel(notif, text="myKaelys Client", font=ctk.CTkFont(size=12)).pack(pady=2)
         ctk.CTkLabel(notif, text=message, font=ctk.CTkFont(size=15, weight="bold")).pack(pady=2)
 
         notif.after(delay, notif.destroy)
