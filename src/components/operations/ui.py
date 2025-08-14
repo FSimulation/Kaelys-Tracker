@@ -165,7 +165,7 @@ class UserProfile(ctk.CTkFrame):
                     if not self.previous_pick or self.pick != self.previous_pick:
                         async def load_profile():
                             tools.write_log("Loading profile...")    
-                            self.user_id_label.configure(text=f"Your ID: {self.pick['id']}", font=("Poppins", 12, "bold"))
+                            self.user_id_label.configure(text=f"Your ID: #{self.pick['id']}", font=("Poppins", 12, "bold"))
                             self.user_discordID_label.configure(text=f"Your Discord ID: {self.pick['discordID']}", font=("Poppins", 12, "bold"))
                             self.deliveries_total_value.configure(text=f"{self.pick['deliveriesTotal']}")
                             self.wallet_value.configure(text=f"${self.pick['wallet']}")
