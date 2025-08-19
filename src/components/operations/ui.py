@@ -2,7 +2,7 @@ import customtkinter as ctk, threading, time, json, asyncio, tkinter as tk, requ
 from PIL import Image
 from io import BytesIO
 from tkinter import filedialog
-from ktrack import tracking_disabled
+from myKaelys import tracking_disabled
 from src.components.pretools import KaelysAPI, GeneralTools, AppSettings
 from werkzeug.security import generate_password_hash
 import sys
@@ -30,121 +30,16 @@ class JobCard(ctk.CTkFrame):
 
 
 
-class UserProfile(ctk.CTkFrame):
+class HomeLeft(ctk.CTkFrame):
     """
     User profile frame for displaying user information.
     """
     def __init__(self, master=None, *args, **kwargs):
         super().__init__(master, fg_color="transparent", *args, **kwargs)
-        self.previous_pick = None # For user data pick in update_user_loop
+        self.previous_pick = None # For user data pick in update_user_profile
 
-
-        ### TOP FRAME
-        self.top_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.top_frame.pack(pady=0.5)
-
-
-        # PROFILE LABEL
-        self.profile_label = ctk.CTkLabel(self.top_frame, text="Profile", font=("Poppins", 20, "italic"))
-        self.profile_label.pack(pady=10)
-
-        # PROFILE PICTURE
-        pfp_image = Image.open(tools.resource_path("src/static/default_pfp.png"))
-        self.profile_image = ctk.CTkImage(size=(100, 100), light_image=pfp_image)
-        self.pfp_label = ctk.CTkLabel(self.top_frame, image=self.profile_image, text="")
-        self.pfp_label.pack(pady=5)
-
-        # USER INFOS
-        self.user_id_label = ctk.CTkLabel(self.top_frame, text="Your ID:", font=("Poppins", 12, "bold"))
-        self.user_id_label.pack(pady=2)
-        self.user_discordID_label = ctk.CTkLabel(self.top_frame, text=f"Your Discord ID:", font=("Poppins", 12, "bold"))
-        self.user_discordID_label.pack(pady=2)
-        
-        ### SEPARATION BAR
-        self.horizontal_bar = ctk.CTkFrame(self, height=3, width=300, corner_radius=0, fg_color="#4F4F4F")
-        self.horizontal_bar.pack(padx=20, pady=20)
-
-        ### BOTTOM FRAME
-        ### STATISTICS
-        self.stats_label = ctk.CTkLabel(self, text="Statistics", font=("Poppins", 20, "italic"))
-        self.stats_label.pack(pady=10)
-
-
-        self.bottom_frame = ctk.CTkFrame(self, fg_color="transparent")
-        self.bottom_frame.pack(pady=10)
-
-        # LEFT FRAME
-        self.left_frame = ctk.CTkFrame(self.bottom_frame, fg_color="transparent")
-        self.left_frame.pack(side="left", padx=10)
-
-        self.deliveries_total_label = ctk.CTkLabel(self.left_frame, text="Deliveries", font=("Arial", 14))
-        self.deliveries_total_label.pack(padx=15, pady=5)
-        self.deliveries_total_value = ctk.CTkLabel(self.left_frame, text="", font=("Arial", 14))
-        self.deliveries_total_value.pack(padx=15, pady=5)
-
-        # SEPARATOR 1
-        self.separator1 = ctk.CTkLabel(self.bottom_frame, text="", width=2, height=50, fg_color="white")
-        self.separator1.pack(side="left", pady=5)
-
-        # MIDDLE FRAME
-        self.middle_frame = ctk.CTkFrame(self.bottom_frame, fg_color="transparent")
-        self.middle_frame.pack(side="left", padx=10)
-
-        self.wallet_label = ctk.CTkLabel(self.middle_frame, text="Wallet", font=("Arial", 14))
-        self.wallet_label.pack(padx=15, pady=5)
-        self.wallet_value = ctk.CTkLabel(self.middle_frame, text="", font=("Arial", 14))
-        self.wallet_value.pack(padx=15, pady=5)
-
-        # SEPARATOR 2
-        self.separator2 = ctk.CTkLabel(self.bottom_frame, text="", width=2, height=50, fg_color="white")
-        self.separator2.pack(side="left", pady=5)
-
-        # RIGHT FRAME
-        self.right_frame = ctk.CTkFrame(self.bottom_frame, fg_color="transparent")
-        self.right_frame.pack(side="left", padx=10)
-
-        self.rank_label = ctk.CTkLabel(self.right_frame, text="Rank", font=("Arial", 14))
-        self.rank_label.pack(padx=15, pady=5)
-        self.rank_value = ctk.CTkLabel(self.right_frame, text="", font=("Arial", 14))
-        self.rank_value.pack(padx=15, pady=5)
-
-        ### LAUNCH UPDATE THREAD LOOP
-        self.user_data = tools.load_json(tools.resource_path("data/user.json"))
-        self.user_id = self.user_data["id"]
-        self.update_profile_loop = threading.Thread(target=self.update_user_profile, daemon=True)
-        self.update_profile_loop.start()
-
-
-        # ### ACTIVE CONTRACTS
-        # # === Label ===
-        # self.active_contracts_label = ctk.CTkLabel(self, text="Active Contracts", font=("Poppins", 16, "italic"))
-        # self.active_contracts_label.pack(pady=(20, 5))
-
-        # # === Affichage des contrats ===
-        # contracts = self.get_user_contracts(self.user_id)
-        # if contracts:
-        #     # === Scrollable Frame (taille réduite) ===
-        #     self.contracts_frame = ctk.CTkScrollableFrame(
-        #         self,
-        #         width=300,
-        #         height=120,
-        #         fg_color="transparent"
-        #     )
-        #     self.contracts_frame.pack(pady=(0, 10), padx=10)
-        #     for contract in contracts[:1]:
-        #         card = ctk.CTkFrame(
-        #             self.contracts_frame,
-        #             corner_radius=6,
-        #             border_width=1,
-        #             fg_color="#1a1a1a",
-        #             border_color="#444"
-        #         )
-        #         card.pack(pady=4, padx=5, fill="x")
-
-        #         ctk.CTkLabel(card, text=f"{contract['title']}", font=("Arial", 12, "bold")).pack(anchor="w", padx=10, pady=(5, 0))
-        #         ctk.CTkLabel(card, text=f"{contract['origin']} → {contract['destination']}", font=("Arial", 10)).pack(anchor="w", padx=10, pady=(0, 5))
-        # else:
-        #     ctk.CTkLabel(self, text="Nothing to show in here.", font=("Arial", 11, "italic")).pack(pady=10)
+        self.stats_label = ctk.CTkLabel(self, text="Statistics", font=("Poppins", 20, "bold"))
+        self.stats_label.pack(pady=5)
         
     
 

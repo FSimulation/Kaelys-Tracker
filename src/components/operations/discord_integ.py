@@ -7,7 +7,7 @@ from src.components.pretools import GeneralTools
 tools = GeneralTools()
 
 
-CLIENT_ID = "1370341805769625732"  # Ton client ID Discord
+CLIENT_ID = "1322271148167135303"  # Ton client ID Discord
 
 
 
@@ -33,14 +33,16 @@ class RichPresence:
             self.rpc.connect()
             self.connected = True
             tools.write_log("Connected to Discord RPC")
-        
 
 
-    def update_presence(self, state):
+    def update_presence(self):
         # Load settings
         memory = tools.load_json(tools.resource_path("data/memory.json"))
         settings = memory["settings"]
         enabledRPC = settings["RPC"]
+
+        infos = tools.load_json(tools.resource_path("properties/infos.json"))
+        version = infos["version"]
 
         # Execute
         if enabledRPC:
@@ -61,7 +63,7 @@ class RichPresence:
 
                 if not self.previous_game or self.previous_game != game:
                     self.rpc.update(
-                        state=state,
+                        state=version,
                         details=game,
                         start=time.time(),
                         large_image=img,
@@ -82,7 +84,7 @@ class RichPresence:
 
         def loop():
             while self.running:
-                self.update_presence("www.kaelysvirtual.streamlit.app")
+                self.update_presence()
                 time.sleep(15)
 
         loop()
