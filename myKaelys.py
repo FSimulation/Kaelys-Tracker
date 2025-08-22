@@ -100,8 +100,8 @@ class LoginWindow(ctk.CTk):
 
         try:
             # Change path if needed
-            pil_logo = Image.open("src/static/MainBanner.png")
-            logo_img = ctk.CTkImage(pil_logo, size=(300, 110))
+            pil_logo = Image.open("src/static/LoginBanner.png")
+            logo_img = ctk.CTkImage(pil_logo, size=(150, 150))
             ctk.CTkLabel(header, image=logo_img, text="").pack()
         except Exception:
             # fallback text logo
@@ -242,9 +242,10 @@ class MainWindow(ctk.CTk):
 
         # BUILD APP
         self.title("myKaelys Client")
-        self.geometry("700x700")
+        self.geometry("1000x850")
         self.iconbitmap(tools.resource_path("src/static/ktrack.ico"))  # Changed to self.iconphoto for better compatibility (Ln 46 and 164)
         ctk.set_appearance_mode("Dark")
+        self.configure(fg_color="#0f1a27")  # deep navy
         # ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
         self.user_data = tools.load_json(tools.resource_path("data/user.json"))
         self.resizable(False, False)
@@ -485,18 +486,23 @@ class MainWindow(ctk.CTk):
 
     ### UI SETUP
     def setup_ui(self):
-        # MAIN BANNER+
-        image_path = tools.resource_path("src/static/MainBanner.png")
-        pil_image = Image.open(image_path)
-        image = ctk.CTkImage(size=(210, 75), light_image=pil_image)
-        main_banner = ctk.CTkLabel(self, image=image, text="")
-        main_banner.pack(pady=7.5)
+        # ========== HEADER ==========
+        # banner
+        banner = Image.open("src/static/Header.png")
+        # banner = original.resize((1200, 180))  # largeur fenêtre, hauteur bannière
+        banner_img = ctk.CTkImage(light_image=banner, dark_image=banner, size=(1000, 155))
 
-        ## TAB VIEW
-        self.tabview = ctk.CTkTabview(self, width=580, height=360, fg_color="transparent", corner_radius=10)
-        self.tabview.pack(padx=10, pady=5, fill="both", expand=True)
-        custom_font = ctk.CTkFont(family="Poppins", size=14, weight="bold")
-        self.tabview._segmented_button.configure(font=custom_font)
+        self.banner_label = ctk.CTkLabel(self, image=banner_img, text="")
+        self.banner_label.pack(side="top", fill="x")
+
+        # ======= TABVIEW =========
+        tab_font = ctk.CTkFont(family="Poppins", size=14, weight="bold")
+        self.tabview = ctk.CTkTabview(self, width=900, height=540, corner_radius=12, fg_color="#0f1a27", segmented_button_fg_color="#1c2b3a", segmented_button_unselected_color="#1c2b3a", segmented_button_unselected_hover_color="#243447")
+        self.tabview.pack(padx=20, pady=20, fill="both", side="left", expand=True)
+
+        # styliser le segmented button interne
+        self.tabview._segmented_button.configure(font=tab_font)
+        self.tabview._segmented_button.grid(sticky="e", padx=10)
 
         # TABS
         self.tabview.add("Home")
@@ -512,7 +518,7 @@ class MainWindow(ctk.CTk):
             self.tabview.tab("Home"),
             width=280,
             height=300,
-            fg_color="#272727",
+            fg_color="#1C2B3A",
             corner_radius=10
         )
         self.frame_left_home.pack(side="left", fill="both", expand=True, padx=(20, 10), pady=10)
@@ -528,8 +534,9 @@ class MainWindow(ctk.CTk):
         self.frame_right_home.pack(side="right", fill="both", expand=True, padx=(10, 20), pady=10)
 
         ## LEFT FRAME CONTENTS
-        self.user_profile = ui.HomeLeft(self.frame_left_home)
-        self.user_profile.pack(pady=20)
+        self.home_left = ui.HomeLeft(self.frame_left_home)
+        self.home_left.pack(pady=20)
+        self.home_left.setup_ui()
 
         ## RIGHT FRAME CONTENTS
         # Online Drivers
@@ -623,6 +630,6 @@ class MainWindow(ctk.CTk):
 if __name__ == "__main__":
     tools.save_txt("", tools.resource_path("logs.txt"))
     tools.save_txt("", tools.resource_path("crash.txt"))
-    app = LoginWindow()
+    app = MainWindow()
     app.mainloop()
 

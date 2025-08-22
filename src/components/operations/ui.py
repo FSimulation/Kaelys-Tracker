@@ -29,59 +29,98 @@ class JobCard(ctk.CTkFrame):
 
 
 
-
 class HomeLeft(ctk.CTkFrame):
-    """
-    User profile frame for displaying user information.
-    """
     def __init__(self, master=None, *args, **kwargs):
         super().__init__(master, fg_color="transparent", *args, **kwargs)
-        self.previous_pick = None # For user data pick in update_user_profile
+        self.custom_font = ctk.CTkFont(family="Poppins", size=14, weight="bold")
+        self.previous_pick = None
+        self.user = tools.load_json(tools.resource_path("data/user.json"))
 
-        self.stats_label = ctk.CTkLabel(self, text="Statistics", font=("Poppins", 20, "bold"))
-        self.stats_label.pack(pady=5)
+
+    def setup_ui(self):
+        ### === USER PROFILE FRAME ===
+        ## == TOP ==
+        top_profile_frame = ctk.CTkFrame(self, fg_color="transparent")
+        top_profile_frame.pack(fill="x", pady=(10, 20), padx=20)
+
+        # = TOP CONTENT =
+        self.pfp_label = ctk.CTkLabel(top_profile_frame, text="", justify="left")
+        self.pfp_label.pack(side="left", padx=30, pady=20)
+
+        self.pfp_infos = ctk.CTkLabel(top_profile_frame, text="", font=self.custom_font)
+        self.pfp_infos.pack(side="right", padx=30)
+
+        ## == BOTTOM ==
+        bottom_profile_frame = ctk.CTkFrame(self, fg_color="transparent")
+        bottom_profile_frame.pack(fill="x", pady=(10, 20), padx=20)
+
+        # = BOTTOM CONTENT =
+        self.user_role_label = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font)
+        self.user_role_label.pack(side="left", padx=10, pady=(0, 5))
+        self.user_role_value = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font)
+        self.user_role_value.pack(side="right", padx=10, pady=(0, 5))
+
+        self.user_discordID_label = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font)
+        self.user_discordID_label.pack(side="left", padx=10, pady=(0, 5))
+        self.user_discordID_value = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font)
+        self.user_discordID_value.pack(side="right", padx=10, pady=(0, 5))
+
+        #### UPDATE PROFILE LOOP
+        thread = threading.Thread(target=self.update_user_profile, daemon=True)
+        thread.start()
+
         
     
-
     def update_user_profile(self):
         """
-        Fetch user information from the server.
+        Background loop to fetch user information from the server every 30s.
+        Updates the UI directly via self.after().
         """
-        while True:
-            payload = {"id": self.user_id}
+        payload = {"id": self.user["id"]}
 
+        while True:
             try:
                 data = asyncio.run(api.get("/tracker/user", payload))
-                if data["error"]:
+                if data.get("error"):
                     tools.write_log(f"Error fetching user info: {data['message']}", type="error")
-                    return
                 else:
-                    self.pick = data["user"]
-                    if not self.previous_pick or self.pick != self.previous_pick:
-                        async def load_profile():
-                            tools.write_log("Loading profile...")    
-                            self.user_id_label.configure(text=f"Your ID: #{self.pick['id']}", font=("Poppins", 12, "bold"))
-                            self.user_discordID_label.configure(text=f"Your Discord ID: {self.pick['discordID']}", font=("Poppins", 12, "bold"))
-                            self.deliveries_total_value.configure(text=f"{self.pick['deliveriesTotal']}")
-                            self.wallet_value.configure(text=f"${self.pick['wallet']}")
-                            self.rank_value.configure(text=f"N°{self.pick['rank']}")
+                    pick = data["user"]
 
-                            image_response = requests.get(self.pick["avatarURL"])
-                            image = Image.open(BytesIO(image_response.content))
+                    if not self.previous_pick or pick != self.previous_pick:
+                        self.previous_pick = pick
+
+                        # --- UI update wrapped in self.after ---
+                        def _update():
+                            tools.write_log("Loading profile...")
+
+                            # pfp
+                            image = Image.open("src/static/default_pfp.png")
                             ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(100, 100))
                             self.pfp_label.configure(image=ctk_image)
-                            self.pfp_label.update()
+                            self.pfp_label.image = ctk_image  # prevent garbage collection
+
+                            # pfp infos
+                            self.pfp_infos.configure(text=f"{self.user['username']} #{self.user['id']}")
+
+                            # user role
+                            self.user_role_label.configure(text="Role:")
+                            if pick["isStaff"]:
+                                self.user_role_value.configure(text="Staff", text_color="red")
+                            else:
+                                self.user_role_value.configure(text="Driver", text_color="green")
+
+                            # user discordID
+                            self.user_discordID_label.configure(text="Discord ID:")
+                            self.user_discordID_value.configure(text=str(pick["discordID"]), text_color="blue")
+
                             tools.write_log("Profile loaded from API request")
 
-                            self.previous_pick = self.pick
-                        
-                        asyncio.run(load_profile())
-            
+                        self.after(0, _update)  # 🔥 trigger update inside the loop
+
             except Exception as e:
                 tools.write_log(f"Error fetching user info: {str(e)}", type="error")
-                return None
-                
-            time.sleep(30)  # Update every 30 seconds
+
+            time.sleep(30)
 
 
 
