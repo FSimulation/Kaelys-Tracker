@@ -328,7 +328,7 @@ class MainWindow(ctk.CTk):
 
 
     def show_game_notification(self, message: str, delay: int):
-        tools.walkie_sound()
+        # tools.walkie_sound()
         notif = ctk.CTkToplevel()
         notif.overrideredirect(True)
         notif.attributes("-topmost", True)
@@ -528,7 +528,7 @@ class MainWindow(ctk.CTk):
             self.tabview.tab("Home"),
             width=280,
             height=300,
-            fg_color="#263139",
+            fg_color="#1C2B3A",
             corner_radius=10
         )
         self.frame_right_home.pack(side="right", fill="both", expand=True, padx=(10, 20), pady=10)
@@ -540,25 +540,54 @@ class MainWindow(ctk.CTk):
 
         ## RIGHT FRAME CONTENTS
         # Online Drivers
-        self.online_ets2_label = ctk.CTkLabel(self.frame_right_home, text="ONLINE - ETS2", font=("Poppins", 10, "italic"), text_color="green")
-        self.online_ets2_label.pack(pady=2)
-        self.online_ets2_players = ctk.CTkLabel(self.frame_right_home, text="Nobody is online.", font=("Poppins", 10, "italic"), text_color="grey")
-        self.online_ets2_players.pack(pady=2)
-        self.online_ats_label = ctk.CTkLabel(self.frame_right_home, text="ONLINE - ATS", font=("Poppins", 10, "italic"), text_color="green")
-        self.online_ats_label.pack(pady=2)
-        self.online_ats_players = ctk.CTkLabel(self.frame_right_home, text="Nobody is online.", font=("Poppins", 10, "italic"), text_color="grey")
-        self.online_ats_players.pack(pady=2)
+        # self.game_status_frame = ctk.CTkFrame(self.frame_right_home, fg_color="transparent")
+        # self.game_status_frame.grid(row=0, column=0, padx=10, pady=10)
+        # self.game_status_frame.columnconfigure(0, weight=1)
+        # self.game_status_label = ctk.CTkLabel(self.game_status_frame, text="Game Status", font=("Poppins", 18), justify="left")
+        # self.game_status_label.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky="w")
+        # self.online_ets2_label = ctk.CTkLabel(self.game_status_frame, text="ONLINE - ETS2", font=("Poppins", 10, "italic"), text_color="green")
+        # self.online_ets2_label.grid(row=1, column=0, padx=10, pady=10, sticky="ew")
+        # self.online_ets2_players = ctk.CTkLabel(self.game_status_frame, text="Nobody is online.", font=("Poppins", 10, "italic"), text_color="grey")
+        # self.online_ets2_players.grid(row=1, column=1, padx=10, pady=10, sticky="ew")
+        # self.online_ats_label = ctk.CTkLabel(self.game_status_frame, text="ONLINE - ATS", font=("Poppins", 10, "italic"), text_color="green")
+        # self.online_ats_label.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
+        # self.online_ats_players = ctk.CTkLabel(self.game_status_frame, text="Nobody is online.", font=("Poppins", 10, "italic"), text_color="grey")
+        # self.online_ats_players.grid(row=2, column=1, padx=10, pady=10, sticky="ew")
 
-        self.live_drivers_loop = threading.Thread(target=self.update_live_drivers, daemon=True)
-        self.live_drivers_loop.start()
+        # self.live_drivers_loop = threading.Thread(target=self.update_live_drivers, daemon=True)
+        # self.live_drivers_loop.start()
 
         # SEPARATION BAR
-        self.horizontal_bar = ctk.CTkFrame(self.frame_right_home, height=3, width=150, corner_radius=0, fg_color="#4F4F4F")
-        self.horizontal_bar.pack(padx=5, pady=5)
+        # self.horizontal_bar = ctk.CTkFrame(self.game_status_frame, height=3, width=150, corner_radius=0, fg_color="#4F4F4F")
+        # self.horizontal_bar.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
 
         # Tracking Control
-        self.tracking_button = ctk.CTkButton(self.frame_right_home, text="Start tracking", command=lambda: [asyncio.run(self.start_tracking_async())], fg_color="#00A000", hover_color="#008D00")
-        self.tracking_button.pack(pady=10)
+        # self.tracking_button = ctk.CTkButton(self.game_status_frame, text="Start tracking", command=lambda: [asyncio.run(self.start_tracking_async())], fg_color="#00A000", hover_color="#008D00")
+        # self.tracking_button.grid(row=4, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
+
+        # self.settings_frame = ctk.CTkFrame(self.frame_right_home, fg_color="transparent")
+        # self.settings_frame.grid(row=1, column=0, padx=10, pady=10)
+
+        # self.settings_label = ctk.CTkLabel(self.settings_frame, text="Settings", font=("Poppins", 18), justify="left")
+        # self.settings_label.grid(row=0, column=0, columnspan=2, padx=10, pady=10, sticky="w")
+
+        # self.dark_mode_label = ctk.CTkLabel(self.settings_frame, text="Dark Mode", font=("Poppins", 12))
+        # self.dark_mode_label.grid(row=1, column=0, padx=10, pady=10, sticky="w")
+
+        # self.dark_mode_switch = ctk.CTkSwitch(self.settings_frame, text="")
+        # self.dark_mode_switch.grid(row=1, column=1, padx=10, pady=10, sticky="e")
+
+        # self.font_dropdown = ctk.CTkOptionMenu(self.settings_frame, values=["Poppins", "Arial", "Courier New", "Comic Sans MS"])
+        # self.font_dropdown.set("Poppins")
+        # self.font_dropdown.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
+
+        # self.hotkeys_button = ctk.CTkButton(self.settings_frame, text="Hotkeys", fg_color="#3D3D3D", hover_color="#2B2B2B")
+        # self.hotkeys_button.grid(row=3, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
+
+        
+
+
+
 
 
         # BOUTON DE TEST POUR L'AFFICHAGE DES DONNES DU SDK

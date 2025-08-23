@@ -32,43 +32,144 @@ class JobCard(ctk.CTkFrame):
 class HomeLeft(ctk.CTkFrame):
     def __init__(self, master=None, *args, **kwargs):
         super().__init__(master, fg_color="transparent", *args, **kwargs)
-        self.custom_font = ctk.CTkFont(family="Poppins", size=14, weight="bold")
+        self.custom_font = ctk.CTkFont(family="Poppins", size=18, weight="bold")
         self.previous_pick = None
         self.user = tools.load_json(tools.resource_path("data/user.json"))
 
 
     def setup_ui(self):
         ### === USER PROFILE FRAME ===
+        ## == PROFILE FRAME == 
+        profile_frame = ctk.CTkFrame(self, fg_color="transparent")
+        profile_frame.grid(row=0, column=0)
+
         ## == TOP ==
-        top_profile_frame = ctk.CTkFrame(self, fg_color="transparent")
-        top_profile_frame.pack(fill="x", pady=(10, 20), padx=20)
+        top_profile_frame = ctk.CTkFrame(profile_frame, fg_color="transparent")
+        top_profile_frame.grid(row=0, column=0, padx=5, pady=5, sticky="ew")
+        top_profile_frame.grid_columnconfigure(0, weight=1)
+        top_profile_frame.grid_columnconfigure(1, weight=1)
 
         # = TOP CONTENT =
         self.pfp_label = ctk.CTkLabel(top_profile_frame, text="", justify="left")
-        self.pfp_label.pack(side="left", padx=30, pady=20)
+        self.pfp_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         self.pfp_infos = ctk.CTkLabel(top_profile_frame, text="", font=self.custom_font)
-        self.pfp_infos.pack(side="right", padx=30)
+        self.pfp_infos.grid(row=0, column=1, padx=5, pady=5, sticky="e")
 
         ## == BOTTOM ==
         bottom_profile_frame = ctk.CTkFrame(self, fg_color="transparent")
-        bottom_profile_frame.pack(fill="x", pady=(10, 20), padx=20)
+        bottom_profile_frame.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
+        bottom_profile_frame.grid_columnconfigure(0, weight=1)
+        bottom_profile_frame.grid_columnconfigure(1, weight=1)
 
         # = BOTTOM CONTENT =
-        self.user_role_label = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font)
-        self.user_role_label.pack(side="left", padx=10, pady=(0, 5))
-        self.user_role_value = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font)
-        self.user_role_value.pack(side="right", padx=10, pady=(0, 5))
+        self.user_role_label = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font, justify="left")
+        self.user_role_label.grid(row=1, column=0, sticky="w", pady=5, padx=(0, 15))
 
-        self.user_discordID_label = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font)
-        self.user_discordID_label.pack(side="left", padx=10, pady=(0, 5))
-        self.user_discordID_value = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font)
-        self.user_discordID_value.pack(side="right", padx=10, pady=(0, 5))
+        self.user_role_value = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font, justify="left")
+        self.user_role_value.grid(row=1, column=1, sticky="w", pady=5, padx=(15, 0))
+
+        self.user_discordID_label = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font, justify="left")
+        self.user_discordID_label.grid(row=0, column=0, sticky="w", pady=5, padx=(0, 15))
+
+        self.user_discordID_value = ctk.CTkLabel(bottom_profile_frame, text="", font=self.custom_font, justify="left")
+        self.user_discordID_value.grid(row=0, column=1, sticky="w", pady=5, padx=(15,0))
+
+        ## == STATISTICS FRAME ==
+        self.statistics_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.statistics_frame.grid(row=2, column=0, sticky="ew")
+        self.statistics_frame.grid_columnconfigure((0, 1), weight=1)
+
+        # 
+        self.separator = ctk.CTkFrame(self.statistics_frame, height=2, fg_color="#555555")
+        self.separator.grid(row=0, column=0, columnspan=2, sticky="ew", padx=0, pady=(10, 20))
+
+
+        # ---- Deliveries ----
+        self.deliveries_frame = ctk.CTkFrame(self.statistics_frame, fg_color="transparent")
+        self.deliveries_frame.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
+        self.deliveries_frame.grid_columnconfigure(1, weight=1)
+
+        self.deliveries_icon_label = ctk.CTkLabel(
+            self.deliveries_frame, text="", 
+            image=ctk.CTkImage(light_image=Image.open("src/static/deliveries_icon.png"),
+                               dark_image=Image.open("src/static/deliveries_icon.png"), size=(48, 48))
+        )
+        self.deliveries_icon_label.grid(row=0, column=0, rowspan=2, padx=5, pady=5, sticky="w")
+        self.deliveries_label = ctk.CTkLabel(self.deliveries_frame, text="Deliveries", font=self.custom_font)
+        self.deliveries_label.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
+        self.deliveries_value = ctk.CTkLabel(self.deliveries_frame, text="0", font=self.custom_font)
+        self.deliveries_value.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="w")
+
+        # ---- Wallet ----
+        self.wallet_frame = ctk.CTkFrame(self.statistics_frame, fg_color="transparent")
+        self.wallet_frame.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+        self.wallet_frame.grid_columnconfigure(1, weight=1)
+
+        self.wallet_icon_label = ctk.CTkLabel(
+            self.wallet_frame, text="",
+            image=ctk.CTkImage(light_image=Image.open("src/static/wallet.png"),
+                               dark_image=Image.open("src/static/wallet.png"), size=(48, 48))
+        )
+        self.wallet_icon_label.grid(row=0, column=0, rowspan=2, padx=5, pady=5, sticky="w")
+        self.wallet_label = ctk.CTkLabel(self.wallet_frame, text="Wallet", font=self.custom_font)
+        self.wallet_label.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
+        self.wallet_value = ctk.CTkLabel(self.wallet_frame, text="$0", font=self.custom_font)
+        self.wallet_value.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="w")
+
+        # ---- Rank ----
+        self.rank_frame = ctk.CTkFrame(self.statistics_frame, fg_color="transparent")
+        self.rank_frame.grid(row=2, column=0, padx=5, pady=5, sticky="ew")
+        self.rank_frame.grid_columnconfigure(1, weight=1)
+
+        self.rank_icon_label = ctk.CTkLabel(
+            self.rank_frame, text="",
+            image=ctk.CTkImage(light_image=Image.open("src/static/rank.png"),
+                               dark_image=Image.open("src/static/rank.png"), size=(48, 48))
+        )
+        self.rank_icon_label.grid(row=0, column=0, rowspan=2, padx=5, pady=5, sticky="w")
+        self.rank_label = ctk.CTkLabel(self.rank_frame, text="Rank", font=self.custom_font)
+        self.rank_label.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
+        self.rank_value = ctk.CTkLabel(self.rank_frame, text="0", font=self.custom_font)
+        self.rank_value.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="w")
+
+        # ---- Total playtime ----
+        self.playtime_frame = ctk.CTkFrame(self.statistics_frame, fg_color="transparent")
+        self.playtime_frame.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+        self.playtime_frame.grid_columnconfigure(1, weight=1)
+
+        self.playtime_icon_label = ctk.CTkLabel(
+            self.playtime_frame, text="",
+            image=ctk.CTkImage(light_image=Image.open("src/static/playtime.png"),
+                               dark_image=Image.open("src/static/playtime.png"), size=(48, 48))
+        )
+        self.playtime_icon_label.grid(row=0, column=0, rowspan=2, padx=5, pady=5, sticky="w")
+        self.playtime_label = ctk.CTkLabel(self.playtime_frame, text="Total playtime", font=self.custom_font)
+        self.playtime_label.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
+        self.playtime_value = ctk.CTkLabel(self.playtime_frame, text="0 h", font=self.custom_font)
+        self.playtime_value.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="w")
+
+        # ---- Current job ----
+        self.current_job_frame = ctk.CTkFrame(self.statistics_frame, fg_color="transparent")
+        self.current_job_frame.grid(row=3, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
+        self.current_job_frame.grid_columnconfigure(1, weight=1)
+
+        self.current_job_icon_label = ctk.CTkLabel(
+            self.current_job_frame, text="",
+            image=ctk.CTkImage(light_image=Image.open("src/static/current_job.png"),
+                               dark_image=Image.open("src/static/current_job.png"), size=(48, 48))
+        )
+        self.current_job_icon_label.grid(row=0, column=0, rowspan=2, padx=5, pady=5, sticky="w")
+        self.current_job_label = ctk.CTkLabel(self.current_job_frame, text="Current job", font=self.custom_font)
+        self.current_job_label.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
+        self.current_job_value = ctk.CTkLabel(self.current_job_frame, text="—", font=self.custom_font)
+        self.current_job_value.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="w")
+
+
 
         #### UPDATE PROFILE LOOP
         thread = threading.Thread(target=self.update_user_profile, daemon=True)
         thread.start()
-
         
     
     def update_user_profile(self):

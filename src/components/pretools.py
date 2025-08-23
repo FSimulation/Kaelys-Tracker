@@ -1,6 +1,6 @@
 import json, sys, os, aiohttp, hashlib, customtkinter as ctk, asyncio
 from datetime import datetime
-from playsound import playsound
+# from playsound import playsound
 
 
 
@@ -69,8 +69,8 @@ class GeneralTools():
         return True if switch.get() == 1 else False
     
 
-    def walkie_sound(self):
-        playsound(self.resource_path("src/static/walkie.mp3"))
+    # def walkie_sound(self):
+    #     playsound(self.resource_path("src/static/walkie.mp3"))
 
 
 
