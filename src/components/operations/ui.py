@@ -1,10 +1,9 @@
-import customtkinter as ctk, threading, time, json, asyncio, tkinter as tk, requests, sys
+import customtkinter as ctk, threading, time, asyncio, tkinter as tk, requests
 from PIL import Image
 from io import BytesIO
 from tkinter import filedialog
 from myKaelys import tracking_disabled
 from src.components.pretools import KaelysAPI, GeneralTools, AppSettings
-from werkzeug.security import generate_password_hash
 from truck_telemetry import truck_telemetry
 from src.components.tracking.deliveries import Deliveries
 
@@ -52,7 +51,7 @@ class HomeLeft(ctk.CTkFrame):
         top_profile_frame.grid_columnconfigure(1, weight=1)
 
         # = TOP CONTENT =
-        image = Image.open("src/static/icon/default_pfp.png")
+        image = Image.open(tools.resource_path("src/static/icon/default_pfp.png"))
         std_image = ctk.CTkImage(light_image=image, dark_image=image, size=(100, 100))
         self.pfp_label = ctk.CTkLabel(top_profile_frame, text="", image=std_image, justify="left")
         self.pfp_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
@@ -96,8 +95,8 @@ class HomeLeft(ctk.CTkFrame):
 
         self.deliveries_icon_label = ctk.CTkLabel(
             self.deliveries_frame, text="", 
-            image=ctk.CTkImage(light_image=Image.open("src/static/icon/delivery.png"),
-                               dark_image=Image.open("src/static/icon/delivery.png"), size=(48, 48))
+            image=ctk.CTkImage(light_image=Image.open(tools.resource_path("src/static/icon/delivery.png")),
+                               dark_image=Image.open(tools.resource_path("src/static/icon/delivery.png")), size=(48, 48))
         )
         self.deliveries_icon_label.grid(row=0, column=0, rowspan=2, padx=5, pady=5, sticky="w")
         self.deliveries_label = ctk.CTkLabel(self.deliveries_frame, text="Deliveries", font=self.custom_font)
@@ -112,8 +111,8 @@ class HomeLeft(ctk.CTkFrame):
 
         self.wallet_icon_label = ctk.CTkLabel(
             self.wallet_frame, text="",
-            image=ctk.CTkImage(light_image=Image.open("src/static/icon/wallet.png"),
-                               dark_image=Image.open("src/static/icon/wallet.png"), size=(48, 48))
+            image=ctk.CTkImage(light_image=Image.open(tools.resource_path("src/static/icon/wallet.png")),
+                               dark_image=Image.open(tools.resource_path("src/static/icon/wallet.png")), size=(48, 48))
         )
         self.wallet_icon_label.grid(row=0, column=0, rowspan=2, padx=5, pady=5, sticky="w")
         self.wallet_label = ctk.CTkLabel(self.wallet_frame, text="Wallet", font=self.custom_font)
@@ -128,8 +127,8 @@ class HomeLeft(ctk.CTkFrame):
 
         self.rank_icon_label = ctk.CTkLabel(
             self.rank_frame, text="",
-            image=ctk.CTkImage(light_image=Image.open("src/static/icon/rank.png"),
-                               dark_image=Image.open("src/static/icon/rank.png"), size=(48, 48))
+            image=ctk.CTkImage(light_image=Image.open(tools.resource_path("src/static/icon/rank.png")),
+                               dark_image=Image.open(tools.resource_path("src/static/icon/rank.png")), size=(48, 48))
         )
         self.rank_icon_label.grid(row=0, column=0, rowspan=2, padx=5, pady=5, sticky="w")
         self.rank_label = ctk.CTkLabel(self.rank_frame, text="Rank", font=self.custom_font)
@@ -317,8 +316,31 @@ class HomeRight(ctk.CTkFrame):
                     # ON SAIT QUE LES DONNES SONT MISES A JOUR
                     if self.telemetry_data["game"] == 1:
                         self.game_status.configure(text="Euro Truck Simulator 2", text_color="green")
+                        self.game_img.configure(
+                            image=ctk.CTkImage(
+                                light_image=Image.open(tools.resource_path("src/static/icon/ETS2.png")),
+                                dark_image=Image.open(tools.resource_path("src/static/icon/ETS2.png")),
+                                size=(100, 100)
+                            )
+                        )
                     elif self.telemetry_data["game"] == 2:
                         self.game_status.configure(text="American Truck Simulator", text_color="green")
+                        self.game_img.configure(
+                            image=ctk.CTkImage(
+                                light_image=Image.open(tools.resource_path("src/static/icon/ATS.png")),
+                                dark_image=Image.open(tools.resource_path("src/static/icon/ATS.png")),
+                                size=(100, 100)
+                            )
+                        )
+                    self.truck_value.configure(text=f"{self.telemetry_data['truckBrand']} {self.telemetry_data['truckName']}")
+                    if not self.telemetry_data['cargo'] == "":
+                        self.cargo_value.configure(text=f"{self.telemetry_data['cargo']} ({int(self.telemetry_data['cargoMass'])} kg)")
+                    else:
+                        self.cargo_value.configure(text="—")
+                    if not self.telemetry_data['citySrc'] == "" and not self.telemetry_data['cityDst'] == "":
+                        self.route_value.configure(text=f"{self.telemetry_data['citySrc']} → {self.telemetry_data['cityDst']}")
+                    else:
+                        self.route_value.configure(text="—")
 
                     event_type = deliveries.handle(self.telemetry_data)
 
@@ -331,20 +353,15 @@ class HomeRight(ctk.CTkFrame):
                     
             except Exception:
                 stopping_txt = "Tracking stopped due to the game being closed."
-                self.show_error(stopping_txt)
                 tools.write_log(stopping_txt)
-                asyncio.run(self.stop_tracking_async())
+                asyncio.run(self.stop_tracking_thread())
                 break
 
             time.sleep(3)
     
 
-    async def start_tracking_async(self):
-        threading.Thread(target=self._run_tracking_async, daemon=True).start()
-
-    
-    def _run_tracking_async(self):
-        self._start_tracking()
+    def start_tracking_thread(self):
+        threading.Thread(target=self._start_tracking, daemon=True).start()
 
 
     def _start_tracking(self):
@@ -361,7 +378,7 @@ class HomeRight(ctk.CTkFrame):
             self.sdk_thread.start()
             self.tracking_button.configure(
                 text="Stop Tracking",
-                command=lambda: [asyncio.run(self.stop_tracking_async())],
+                command=lambda: [asyncio.run(self.stop_tracking_thread())],
                 fg_color="#25374a", 
                 hover_color="#213140"
             )
@@ -383,12 +400,8 @@ class HomeRight(ctk.CTkFrame):
             tools.write_log("SDK init failed: FileNotFoundError", type="error")
 
 
-    async def stop_tracking_async(self):
-        threading.Thread(target=self._run_tracking_stop_async, daemon=True).start()
-
-    
-    def _run_tracking_stop_async(self):
-        self._stop_tracking()
+    async def stop_tracking_thread(self):
+        threading.Thread(target=self._stop_tracking, daemon=True).start()
 
 
     def _stop_tracking(self):
@@ -398,12 +411,20 @@ class HomeRight(ctk.CTkFrame):
         truck_telemetry.deinit()
         self.tracking_button.configure(
             text="Start Tracking",
-            command=lambda: [asyncio.run(self.start_tracking_async())],
+            command=lambda: [asyncio.run(self.start_tracking_thread())],
             fg_color="#12a4b7",
             hover_color="#0e8ea0"
         )
         self.game_status.configure(text="No game running.", text_color="grey")
-        self.game_status.update()
+        self.game_img.configure(
+                            image=ctk.CTkImage(
+                                light_image=Image.open(tools.resource_path("src/static/icon/NoGameRunning.png")),
+                                dark_image=Image.open(tools.resource_path("src/static/icon/NoGameRunning.png")),
+                                size=(100, 100)
+                            ))
+        self.truck_value.configure(text="—")
+        self.cargo_value.configure(text="—")
+        self.route_value.configure(text="—")
         tools.write_log("Tracking stopped cleanly")
 
         # UPDATE LIVE DRIVERS
@@ -419,7 +440,7 @@ class HomeRight(ctk.CTkFrame):
 
     def setup_ui(self):
         # GAME DISPLAY
-        game_idle_icon_src = Image.open("src/static/icon/NoGameRunning.png")
+        game_idle_icon_src = Image.open(tools.resource_path("src/static/icon/NoGameRunning.png"))
         game_idle_icon = ctk.CTkImage(light_image=game_idle_icon_src, dark_image=game_idle_icon_src, size=(100, 100))
         self.game_img = ctk.CTkLabel(self, text="", image=game_idle_icon)
         self.game_img.grid(row=0, column=0, columnspan=2, pady=5)
@@ -465,7 +486,7 @@ class HomeRight(ctk.CTkFrame):
             width=200,
             fg_color="#12a4b7",
             hover_color="#0e8ea0",
-            command=lambda: [asyncio.run(self.start_tracking_async())],
+            command=lambda: [asyncio.run(self.start_tracking_thread())],
             font=self.custom_font
         )
         self.tracking_button.grid(row=8, column=0, columnspan=2, pady=(5, 10), padx=24, sticky="ew")
@@ -541,7 +562,7 @@ class SettingsPage(ctk.CTkFrame):
 
         # AUTO-TRACKING -> CAUTION: self.tracking_var is only used to determine initial Tracking switch value
         self.tracking_var = tk.IntVar(value=1 if settings["Auto-Tracking"] else 0)
-        self.auto_tracking_switch = ctk.CTkSwitch(self.column_3, state="Disabled", text="Auto-Tracking (soon)", font=self.custom_font, onvalue=1, offvalue=0, command=lambda: [tools.write_log(f"[ SETTINGS PRESET] Auto-Tracking set to {tools.get_switch_value(self.auto_tracking_switch)}", type="info")], variable=self.tracking_var)
+        self.auto_tracking_switch = ctk.CTkSwitch(self.column_3, state="disabled", text="Auto-Tracking (soon)", font=self.custom_font, onvalue=1, offvalue=0, command=lambda: [tools.write_log(f"[ SETTINGS PRESET] Auto-Tracking set to {tools.get_switch_value(self.auto_tracking_switch)}", type="info")], variable=self.tracking_var)
         self.auto_tracking_switch.pack(pady=5, padx=10)
 
         ### WARNING: This code won't be used for now, keep it commented out :3
@@ -673,7 +694,7 @@ class SettingsPage(ctk.CTkFrame):
                     "discordID": 0,
                     "encrypted_password": ""}
         tools.save_json(new_data, tools.resource_path("data/user.json"))
-        
+
 
             
 
@@ -683,59 +704,69 @@ class InfosPage(ctk.CTkFrame):
     """
     def __init__(self, master=None, *args, **kwargs):
         super().__init__(master, fg_color="transparent", *args, **kwargs)
+        self.custom_font = ctk.CTkFont(family="Poppins", size=16, weight="bold")
+        self.setup_ui()
 
-        try:
-            # === MAIN FRAME ===
-            self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
-            self.main_frame.pack(pady=10, fill="both", expand=True)
 
-            # Get infos dictionary
-            infos = tools.load_json(tools.resource_path("properties/infos.json"))
+    def setup_ui(self):
+        # === MAIN FRAME ===
+        self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.main_frame.pack(pady=10, fill="both", expand=True)
+
+        # Get infos dictionary
+        infos = tools.load_json(tools.resource_path("properties/infos.json"))
+        
+        # Version heading
+        self.infos_heading_label = ctk.CTkLabel(self.main_frame, text=infos["version"], font=self.custom_font)
+        self.infos_heading_label.pack(pady=(0, 10))
+
+        # === HOW TO INSTALL SECTION ===
+        self.how_to_install_frame = ctk.CTkFrame(self.main_frame, fg_color="#1C2B3A")
+        self.how_to_install_frame.pack(pady=5, padx=10, fill="x")
+
+        self.how_to_install_heading = ctk.CTkLabel(self.how_to_install_frame, text="How to install", font=self.custom_font)
+        self.how_to_install_heading.pack(pady=5, padx=10)
+
+        self.how_to_install_text = ctk.CTkLabel(self.how_to_install_frame, text=infos["how_to_install"], font=self.custom_font, wraplength=550, justify="left", anchor="w")
+        self.how_to_install_text.pack(pady=5, padx=10, fill="x", expand=True)
+
+        # === HOW TO USE SECTION ===
+        # self.how_to_use_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
+        # self.how_to_use_frame.pack(pady=5, padx=10, fill="x")
+
+        # self.how_to_use_heading = ctk.CTkLabel(self.how_to_use_frame, text="How to use", font=("Poppins", 20, "bold"))
+        # self.how_to_use_heading.pack(pady=5, padx=10)
+
+        # self.how_to_use_text = ctk.CTkLabel(self.how_to_use_frame, text=infos["how_to_use"], font=("Poppins", 16), wraplength=550,  justify="left", anchor="w")
+        # self.how_to_use_text.pack(pady=5, padx=10, fill="x", expand=True)
+
+        # === CHANGELOG SECTION ===
+        self.changelog_frame = ctk.CTkFrame(self.main_frame, fg_color="#1C2B3A")
+        self.changelog_frame.pack(pady=5, padx=10, fill="x")
+
+        self.changelog_heading = ctk.CTkLabel(self.changelog_frame, text="Changelog", font=self.custom_font)
+        self.changelog_heading.pack(pady=5, padx=10)
+
+        changelog_text = ""
+        if isinstance(infos["changelog"], list):
+            # Join list items with newlines if changelog is a list
+            changelog_text = "\n".join(infos["changelog"])
+        else:
+            # Use as is if it's already a string
+            changelog_text = infos["changelog"]
             
-            # Version heading
-            self.infos_heading_label = ctk.CTkLabel(self.main_frame, text=infos["version"], font=('Poppins', 20, 'italic'))
-            self.infos_heading_label.pack(pady=(0, 10))
+        self.changelog_text = ctk.CTkLabel(self.changelog_frame, text=changelog_text,font=self.custom_font, wraplength=600, justify="left", anchor="w")
+        self.changelog_text.pack(pady=5, padx=10, fill="x", expand=True)
 
-            # === HOW TO INSTALL SECTION ===
-            self.how_to_install_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
-            self.how_to_install_frame.pack(pady=5, padx=10, fill="x")
+        # === CREDIT ===
+        self.credits_frame = ctk.CTkFrame(self.main_frame, fg_color="#1C2B3A")
+        self.credits_frame.pack(pady=5, padx=10, fill="x")
 
-            self.how_to_install_heading = ctk.CTkLabel(self.how_to_install_frame, text="How to install", font=("Poppins", 20, "bold"))
-            self.how_to_install_heading.pack(pady=5, padx=10)
+        self.credits_heading = ctk.CTkLabel(self.credits_frame, text="Credits", font=self.custom_font)
+        self.credits_heading.pack(pady=5, padx=10)
 
-            self.how_to_install_text = ctk.CTkLabel(self.how_to_install_frame, text=infos["how_to_install"], font=("Poppins", 16), wraplength=550, justify="left", anchor="w")
-            self.how_to_install_text.pack(pady=5, padx=10, fill="x", expand=True)
-
-            # === HOW TO USE SECTION ===
-            # self.how_to_use_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
-            # self.how_to_use_frame.pack(pady=5, padx=10, fill="x")
-
-            # self.how_to_use_heading = ctk.CTkLabel(self.how_to_use_frame, text="How to use", font=("Poppins", 20, "bold"))
-            # self.how_to_use_heading.pack(pady=5, padx=10)
-
-            # self.how_to_use_text = ctk.CTkLabel(self.how_to_use_frame, text=infos["how_to_use"], font=("Poppins", 16), wraplength=550,  justify="left", anchor="w")
-            # self.how_to_use_text.pack(pady=5, padx=10, fill="x", expand=True)
-
-            # === CHANGELOG SECTION ===
-            self.changelog_frame = ctk.CTkFrame(self.main_frame, fg_color="#1B1B1B")
-            self.changelog_frame.pack(pady=5, padx=10, fill="x")
-
-            self.changelog_heading = ctk.CTkLabel(self.changelog_frame, text="Changelog", font=("Poppins", 20, "bold"))
-            self.changelog_heading.pack(pady=5, padx=10)
-
-            changelog_text = ""
-            if isinstance(infos["changelog"], list):
-                # Join list items with newlines if changelog is a list
-                changelog_text = "\n".join(infos["changelog"])
-            else:
-                # Use as is if it's already a string
-                changelog_text = infos["changelog"]
-                
-            self.changelog_text = ctk.CTkLabel(self.changelog_frame, text=changelog_text,font=("Poppins", 16), wraplength=600, justify="left", anchor="w")
-            self.changelog_text.pack(pady=5, padx=10, fill="x", expand=True)
-
-        except Exception as e:
-            tools.write_log(f"Error displaying Infos page: {e}", type="error")
+        self.credits_text = ctk.CTkLabel(self.credits_frame, text=infos["credits"], font=self.custom_font, wraplength=600, justify="left", anchor="w")
+        self.credits_text.pack(pady=(0, 5), padx=10, fill="both", expand=True)
 
     # def load_infos(self):
     #     """
@@ -745,3 +776,201 @@ class InfosPage(ctk.CTkFrame):
     #         infos = json.load(f)
     #     return infos
 
+
+
+class DriverCard(ctk.CTkFrame):
+    def __init__(self, master, name, game, *args, **kwargs):
+        super().__init__(master, fg_color="#1e2a38", corner_radius=10, *args, **kwargs)
+        self.custom_font = ctk.CTkFont(family="Poppins", size=16, weight="bold")
+
+        # Icon (user/truck)
+        self.icon = ctk.CTkLabel(self, text="🚛" if game == "ETS2" else "🚚", font=("Arial", 18))
+        self.icon.pack(side="left", padx=10, pady=10)
+
+        # Driver name
+        self.name_label = ctk.CTkLabel(self, text=name, font=self.custom_font)
+        self.name_label.pack(side="left", padx=5, pady=10, anchor="w")
+
+        # Badge game
+        badge_color = "#0d6efd" if game == "ETS2" else "#dc3545"
+        self.badge = ctk.CTkLabel(
+            self,
+            text=game,
+            font=self.custom_font,
+            fg_color=badge_color,
+            text_color="white",
+            corner_radius=8,
+            width=50,
+            height=20
+        )
+        self.badge.pack(side="right", padx=10, pady=10)
+
+
+
+class LiveDrivers(ctk.CTkFrame):
+    def __init__(self, master=None, *args, **kwargs):
+        super().__init__(master, fg_color="transparent", *args, **kwargs)
+        self.custom_font = ctk.CTkFont(family="Poppins", size=18, weight="bold")
+
+        # UI setup
+        self.setup_ui()
+
+        # Thread update loop
+        self.previous_live_drivers = None
+        threading.Thread(target=self.update_live_drivers, daemon=True).start()
+
+
+    def setup_ui(self):
+        # Title
+        self.live_drivers_label = ctk.CTkLabel(
+            self, text="Drivers Online", font=self.custom_font
+        )
+        self.live_drivers_label.pack(pady=(10, 5))
+
+        # Scrollable frame
+        self.scrollable_frame = ctk.CTkScrollableFrame(
+            self, fg_color="transparent", orientation="vertical", width=360, height=400
+        )
+        self.scrollable_frame.pack(padx=15, pady=10)
+
+        # Placeholder
+        self.placeholder = ctk.CTkLabel(
+            self.scrollable_frame,
+            text="No drivers currently in-game",
+            font=self.custom_font,
+            text_color="grey"
+        )
+        self.placeholder.pack(pady=10)
+
+
+    def clear_scrollable(self):
+        """Remove all widgets from the scrollable frame"""
+        for widget in self.scrollable_frame.winfo_children():
+            widget.destroy()
+
+
+    def update_live_drivers(self):
+        """Background loop to fetch live drivers from API"""
+        while True:
+            try:
+                data = asyncio.run(api.get("/tracker/user/live"))
+                if data.get("error"):
+                    tools.write_log(f"Error fetching live drivers: {data['message']}", type="error")
+                else:
+                    live_drivers_ets2 = data.get("ets2", [])
+                    live_drivers_ats = data.get("ats", [])
+
+                    self.after(0, lambda: self.refresh_ui(live_drivers_ets2, live_drivers_ats))
+
+            except Exception as e:
+                tools.write_log(f"Error fetching live drivers: {str(e)}", type="error")
+
+            time.sleep(30)
+
+
+    def refresh_ui(self, ets2_list, ats_list):
+        """Refresh UI with new drivers list"""
+        self.clear_scrollable()
+
+        if not ets2_list and not ats_list:
+            self.placeholder = ctk.CTkLabel(
+                self.scrollable_frame,
+                text="Nobody is online.",
+                font=self.custom_font,
+                text_color="grey"
+            )
+            self.placeholder.pack(pady=10)
+            return
+
+        # Add ETS2 drivers
+        for driver in ets2_list:
+            card = DriverCard(self.scrollable_frame, driver, "ETS2")
+            card.pack(fill="x", padx=5, pady=5)
+
+        # Add ATS drivers
+        for driver in ats_list:
+            card = DriverCard(self.scrollable_frame, driver, "ATS")
+            card.pack(fill="x", padx=5, pady=5)
+
+
+
+class TMPServers(ctk.CTkFrame):
+    def __init__(self, master=None, *args, **kwargs):
+        super().__init__(master, fg_color="transparent", *args, **kwargs)
+        self.custom_font = ctk.CTkFont(family="Poppins", size=18, weight="bold")
+        self.setup_ui()
+        threading.Thread(target=self.update_servers_loop, daemon=True).start()
+
+
+    def setup_ui(self):
+        # Title
+        self.servers_label = ctk.CTkLabel(
+            self, text="TruckersMP Traffic", font=self.custom_font
+        )
+        self.servers_label.pack(pady=(10, 5))
+
+        # Scrollable frame
+        self.scrollable_frame = ctk.CTkScrollableFrame(
+            self, fg_color="transparent", orientation="vertical", width=320, height=400
+        )
+        self.scrollable_frame.pack(padx=15, pady=10)
+
+        # Placeholder
+        self.placeholder = ctk.CTkLabel(
+            self.scrollable_frame,
+            text="Loading servers...",
+            font=self.custom_font,
+            text_color="grey"
+        )
+        self.placeholder.pack(pady=10)
+
+
+    def clear_scrollable(self):
+        """Remove all widgets from the scrollable frame"""
+        for widget in self.scrollable_frame.winfo_children():
+            widget.destroy()
+
+
+    def update_servers_loop(self):
+        """Background loop to fetch TMP servers from API"""
+        while True:
+            try:
+                request = requests.get("https://api.truckersmp.com/v2/servers")
+                data = request.json()
+                # if data["error"]:
+                #     tools.write_log(f"Error fetching TMP servers: {data['message']}", type="error")
+                # else:
+                tools.write_log("Fetched TMP servers successfully")
+                servers = data["response"]
+                self.after(0, lambda: self.refresh_ui(servers))
+
+            except Exception as e:
+                tools.write_log(f"Error fetching TMP servers: {str(e)}", type="error")
+
+            time.sleep(300)  # Update every 5 minutes
+
+
+    def refresh_ui(self, servers):
+        """Refresh UI with new servers list"""
+        self.clear_scrollable()
+
+        if not servers:
+            self.placeholder = ctk.CTkLabel(
+                self.scrollable_frame,
+                text="No server information available.",
+                font=self.custom_font,
+                text_color="grey"
+            )
+            self.placeholder.pack(pady=10)
+            return
+
+        for server in  servers:
+            status_color = "green" if server["online"] == True else "red"
+            server_frame = ctk.CTkFrame(self.scrollable_frame, fg_color="#1e2a38", corner_radius=10)
+            server_frame.pack(fill="x", padx=5, pady=5)
+
+            status_label = ctk.CTkLabel(server_frame, text=server["shortname"], font=self.custom_font, text_color=status_color)
+            status_label.pack(side="left", padx=10, pady=10)
+
+            players_label = ctk.CTkLabel(server_frame, text=f"{server['players']} drivers", font=self.custom_font)
+            players_label.pack(side="right", padx=10, pady=10)

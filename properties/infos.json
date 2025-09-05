@@ -2,7 +2,14 @@
     "version": "v.05-08-2025 Public Build",
     "how_to_install": "*Place the scs-telemetry.dll file in this folder:\n'C:\\Programs (x86)\\Steam\\steamapps\\common\\Euro Truck Simulator 2 or American Truck Simulator\\bin\\win_x64\\plugins'",
     "how_to_use": "*Launch ktrack.exe and start the tracking when the game is launched.\n*Your KaelysHUB credentials are required.\n*Make sure to launch the app every time you want to track you deliveries.",
-    "changelog": ["- Changed URL to the API", "- myKaelys design update", "- Other minor changes and fixes"],
+    "changelog": [
+      "- Complete rework of the whole interface",
+      "- User's profile redesigned",
+      "- Game display redesigned",
+      "- Added new tab for live data",
+      "- Moved live drivers display to the new live data tab",
+      "- Added TruckersMP servers infos, including traffic in the new live data tab"
+    ],
     "hotkeys": [
         "Ctrl+1: Start driving",
         "Ctrl+2: Stop for fuel",
@@ -10,5 +17,6 @@
         "Ctrl+4: Take detour",
         "Ctrl+5: Take 8h break",
         "Ctrl+6: Stop driving"
-  ]
+    ],
+    "credits": "- FSimulation (Lead Developer)\n- HexSK (Assistant Developer)"
 }
