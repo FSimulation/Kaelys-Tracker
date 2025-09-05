@@ -442,6 +442,24 @@ class MainWindow(ctk.CTk):
 
 
     ## EXTRA FEATURES
+    def game_notif(self, message: str, delay=5000):
+        self.after(500, self.show_game_notification, message, delay)
+
+
+    def show_game_notification(self, message: str, delay: int):
+        # tools.walkie_sound()
+        notif = ctk.CTkToplevel()
+        notif.overrideredirect(True)
+        notif.attributes("-topmost", True)
+
+        width, height = 250, 80
+        notif.geometry(f"{width}x{height}+10+10")
+
+        ctk.CTkLabel(notif, text="myKaelys Client", font=ctk.CTkFont(size=12)).pack(pady=2)
+        ctk.CTkLabel(notif, text=message, font=ctk.CTkFont(size=15, weight="bold")).pack(pady=2)
+
+        notif.after(delay, notif.destroy)
+        
     # CB EVENT
     def handle_cb_event(self, event_type, message):
         global tracking_disabled
