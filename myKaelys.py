@@ -236,7 +236,6 @@ class MainWindow(ctk.CTk):
     def normal_mode(self):
         success = asyncio.run(settings.load())
         if not success:
-            self.show_error("CRITICAL: Couldn't load settings. Aborting startup.")
             sys.exit()
             return
 
