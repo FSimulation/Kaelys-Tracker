@@ -16,6 +16,7 @@ dist/
 
 # Cache Python
 __pycache__/
+/src/components/__pycache__
 *.py[cod]
 *.pyc
 
