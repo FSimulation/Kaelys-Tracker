@@ -4,6 +4,7 @@ from src.components.pretools import GeneralTools, KaelysAPI, AppSettings
 import src.components.operations.ui as ui
 import src.components.operations.discord_integ as dinteg
 from cryptography.fernet import Fernet
+from tkinter import messagebox
 
 
 tools = GeneralTools()
@@ -22,6 +23,20 @@ tracking_disabled = True
 ENCRYPTION_KEY = b'GHq79RDXt6UoVUK44gutkHQOg1zKIH50UYTrKdGkCXI=' 
 cipher = Fernet(ENCRYPTION_KEY)
 
+
+def check_update():
+    try:
+        properties = tools.load_json(tools.resource_path("properties/infos.json"))
+        current_version = properties["version"]
+
+        latest_version = asyncio.run(api.get_tracker_latest())
+        if latest_version != current_version:
+            tools.write_log(f"Update available: {latest_version} (current: {current_version})", type="info")
+            messagebox.showinfo("Update available", f"A new version of myKaelys Client is available: {latest_version}\nYou can run the installer to download this update.")
+        else:
+            tools.write_log("No update available", type="info")
+    except Exception as e:
+        tools.write_log(f"Couldn't check for updates: {e}", type="error")
 
 
 def game_notif(message: str, delay=5000):
@@ -507,13 +522,12 @@ class MainWindow(ctk.CTk):
 
         threading.Thread(target=lambda: keyboard.hook(on_key), daemon=True).start()
 
-    
-
 
 
 if __name__ == "__main__":
     tools.save_txt("", tools.resource_path("logs.txt"))
     tools.save_txt("", tools.resource_path("crash.txt"))
+    threading.Thread(target=check_update, daemon=True).start()
     app = LoginWindow()
     app.mainloop()
 
