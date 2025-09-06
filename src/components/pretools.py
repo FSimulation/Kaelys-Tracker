@@ -1,6 +1,6 @@
 import json, sys, os, aiohttp, hashlib, customtkinter as ctk, asyncio
 from datetime import datetime
-from playsound import playsound
+# from playsound import playsound
 
 
 
@@ -69,8 +69,8 @@ class GeneralTools():
         return True if switch.get() == 1 else False
     
 
-    def walkie_sound(self):
-        playsound(self.resource_path("src/static/walkie.mp3"))
+    # def walkie_sound(self):
+    #     playsound(self.resource_path("src/static/walkie.mp3"))
 
 
 
@@ -88,6 +88,19 @@ class KaelysAPI():
             self.tools.write_log("API -> GET STATUS")
             async with session.get(f"{self.API_URL}/") as response:
                 return response.status
+            
+    
+    async def get_tracker_latest(self):
+        async with aiohttp.ClientSession() as session:
+            self.tools.write_log("API -> GET LATEST VERSION")
+            async with session.get(f"{self.API_URL}/tracker/version") as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data["latestVersion"]
+                else:
+                    message = "Interaction with the API has failed"
+                    self.tools.write_log(message, type="error")
+                    return {"error": True, "message": message}
 
 
     async def get(self, route: str, request_data: dict = None):
@@ -208,8 +221,11 @@ class AppSettings():
             self.tools.write_log(f'Error while loading settings: {response["message"]}', type="error")
             return False
         else:
+            self.tools.write_log(response["settings"])
             memory = self.tools.load_json(self.tools.resource_path("data/memory.json"))
             memory["settings"] = response["settings"]
+            self.tools.write_log(memory["settings"])
+            self.tools.save_json(memory, self.tools.resource_path("data/memory.json"))
             self.tools.write_log("Settings loaded to memory")
             return True
 
