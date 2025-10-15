@@ -1,1 +1,1 @@
-pyinstaller --onedir --windowed --add-data "crash.txt;." --add-data "logs.txt;." --add-data "data;data" --add-data "src/static;src/static" --add-data "properties;properties" --icon "src/static/ktrack.ico" myKaelys.py
+pyinstaller --onedir --windowed --add-data "crash.txt;." --add-data "logs.txt;." --add-data "data;data" --add-data "src/static;src/static" --add-data "properties;properties" --icon "src/static/ktrack.ico" NaviTrack.py

@@ -1,11 +1,12 @@
-import customtkinter as ctk, threading, time, asyncio, tkinter as tk, requests
+import customtkinter as ctk, threading, time, asyncio, tkinter as tk, requests, sys
 from PIL import Image
 from io import BytesIO
 from tkinter import filedialog
-from myKaelys import tracking_disabled
+from NaviTrack import tracking_disabled
 from src.components.pretools import KaelysAPI, GeneralTools, AppSettings
 from truck_telemetry import truck_telemetry
 from src.components.tracking.deliveries import Deliveries
+from tkinter import messagebox
 
 
 tools = GeneralTools()
@@ -135,6 +136,16 @@ class HomeLeft(ctk.CTkFrame):
         self.rank_label.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
         self.rank_value = ctk.CTkLabel(self.rank_frame, text="0", font=self.custom_font)
         self.rank_value.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="w")
+
+        # ---- Logbook Button ----
+        self.logbook_btn_frame = ctk.CTkFrame(self.statistics_frame, fg_color="transparent")
+        self.logbook_btn_frame.grid(row=2, column=1, padx=3, pady=5, sticky="ew")
+        self.logbook_btn_frame.grid_columnconfigure(1, weight=1)
+
+        self.logbook_button = ctk.CTkButton(self.logbook_btn_frame, text="Logbook", height=40,
+                                       fg_color="#12a4b7", hover_color="#0e8ea0",
+                                       font=self.custom_font, state="disabled")
+        self.logbook_button.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
 
         #[UNUSED]
         # # ---- Total playtime ----
@@ -269,16 +280,7 @@ class HomeRight(ctk.CTkFrame):
     
 
     def show_error(self, message: str):
-        error_window = ctk.CTkToplevel()
-        error_window.geometry("300x150")
-        error_window.title("Error")
-        error_window.resizable(False, False)
-
-        ctk.CTkLabel(error_window, text="An error occured.", text_color="red", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 5))
-        ctk.CTkLabel(error_window, text=message, wraplength=250).pack(pady=5)
-        ctk.CTkButton(error_window, text="Close", command=error_window.destroy).pack(pady=10)
-
-        error_window.grab_set()
+        messagebox.showerror("Error", message)
         tools.write_log(message, type="error")
 
 
@@ -504,11 +506,6 @@ class SettingsPage(ctk.CTkFrame):
 
 
     def setup_ui(self):
-        # === SETTINGS LABEL ===
-        notice = "⚠️ Some settings may need a restart to apply."
-        self.settings_label = ctk.CTkLabel(self, text=notice, font=self.custom_font)
-        self.settings_label.pack(pady=2)
-
         # === FRAME PRINCIPAL ===
         self.main_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.main_frame.pack(pady=10)
@@ -547,9 +544,9 @@ class SettingsPage(ctk.CTkFrame):
         self.show_hotkeys_button.pack(pady=5, padx=10)
 
         # LOGOUT (soon)
-        self.logout_btn = ctk.CTkButton(self.column_1, text="Logout (soon)",
-                                         fg_color="#25374a", hover_color="#213140",
-                                         state="disabled", font=self.custom_font)
+        self.logout_btn = ctk.CTkButton(self.column_1, text="Logout",
+                                         fg_color="#25374a", hover_color="#213140", 
+                                         font=self.custom_font, command=self.logout)
         self.logout_btn.pack(fill="x", pady=5, padx=10)
 
         ## Switches
@@ -562,7 +559,7 @@ class SettingsPage(ctk.CTkFrame):
 
         # AUTO-TRACKING -> CAUTION: self.tracking_var is only used to determine initial Tracking switch value
         self.tracking_var = tk.IntVar(value=1 if settings["Auto-Tracking"] else 0)
-        self.auto_tracking_switch = ctk.CTkSwitch(self.column_3, state="disabled", text="Auto-Tracking (soon)", font=self.custom_font, onvalue=1, offvalue=0, command=lambda: [tools.write_log(f"[ SETTINGS PRESET] Auto-Tracking set to {tools.get_switch_value(self.auto_tracking_switch)}", type="info")], variable=self.tracking_var)
+        self.auto_tracking_switch = ctk.CTkSwitch(self.column_3, text="Auto-Tracking (restart needed)", font=self.custom_font, onvalue=1, offvalue=0, command=lambda: [tools.write_log(f"[ SETTINGS PRESET] Auto-Tracking set to {tools.get_switch_value(self.auto_tracking_switch)}", type="info")], variable=self.tracking_var, state="disabled")
         self.auto_tracking_switch.pack(pady=5, padx=10)
 
         ### WARNING: This code won't be used for now, keep it commented out :3
@@ -612,16 +609,8 @@ class SettingsPage(ctk.CTkFrame):
 
 
     def show_error(self, message: str):
-        error_window = ctk.CTkToplevel()
-        error_window.geometry("300x150")
-        error_window.title("Error")
-        error_window.resizable(False, False)
-
-        ctk.CTkLabel(error_window, text="An error occured.", text_color="red", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 5))
-        ctk.CTkLabel(error_window, text=message, wraplength=250).pack(pady=5)
-        ctk.CTkButton(error_window, text="Close", command=error_window.destroy).pack(pady=10)
-
-        error_window.grab_set()
+        messagebox.showerror("Error", message)
+        tools.write_log(message, type="error")
 
     
     def show_success(self, message: str):
@@ -687,13 +676,19 @@ class SettingsPage(ctk.CTkFrame):
         hotkeys_window.grab_set()
     
 
-    def delete_login(self):
-        new_data = {"id": 0,
-                    "username": "",
-                    "steamID64": 0,
-                    "discordID": 0,
-                    "encrypted_password": ""}
-        tools.save_json(new_data, tools.resource_path("data/user.json"))
+    def on_close(self):
+        try:
+            tools.write_log("Application closed cleanly")
+        except Exception as e:
+            tools.write_log(f"Application closed with error: {e}", type="error")
+        sys.exit()
+
+
+    def logout(self):
+        memory = tools.load_json(tools.resource_path("data/memory.json"))
+        memory["local"]["Auto-Login"] = False
+        tools.save_json(memory, tools.resource_path("data/memory.json"))
+        self.on_close()
 
 
             
@@ -758,15 +753,15 @@ class InfosPage(ctk.CTkFrame):
         self.changelog_text = ctk.CTkLabel(self.changelog_frame, text=changelog_text,font=self.custom_font, wraplength=600, justify="left", anchor="w")
         self.changelog_text.pack(pady=5, padx=10, fill="x", expand=True)
 
-        # === CREDIT ===
-        self.credits_frame = ctk.CTkFrame(self.main_frame, fg_color="#1C2B3A")
-        self.credits_frame.pack(pady=5, padx=10, fill="x")
+        # # === CREDIT ===
+        # self.credits_frame = ctk.CTkFrame(self.main_frame, fg_color="#1C2B3A")
+        # self.credits_frame.pack(pady=5, padx=10, fill="x")
 
-        self.credits_heading = ctk.CTkLabel(self.credits_frame, text="Credits", font=self.custom_font)
-        self.credits_heading.pack(pady=5, padx=10)
+        # self.credits_heading = ctk.CTkLabel(self.credits_frame, text="Credits", font=self.custom_font)
+        # self.credits_heading.pack(pady=5, padx=10)
 
-        self.credits_text = ctk.CTkLabel(self.credits_frame, text=infos["credits"], font=self.custom_font, wraplength=600, justify="left", anchor="w")
-        self.credits_text.pack(pady=(0, 5), padx=10, fill="both", expand=True)
+        # self.credits_text = ctk.CTkLabel(self.credits_frame, text=infos["credits"], font=self.custom_font, wraplength=600, justify="left", anchor="w")
+        # self.credits_text.pack(pady=(0, 5), padx=10, fill="both", expand=True)
 
     # def load_infos(self):
     #     """

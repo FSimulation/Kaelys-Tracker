@@ -32,7 +32,7 @@ def check_update():
         latest_version = asyncio.run(api.get_tracker_latest())
         if latest_version != current_version:
             tools.write_log(f"Update available: {latest_version} (current: {current_version})", type="info")
-            messagebox.showinfo("Update available", f"A new version of myKaelys Client is available: {latest_version}\nYou can run the installer to download this update.")
+            messagebox.showinfo("Update available", f"A new version of NaviTrack is available: {latest_version}\nYou can run the installer to download this update.")
         else:
             tools.write_log("No update available", type="info")
     except Exception as e:
@@ -59,7 +59,7 @@ class LoginWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         try:
-            self.title("myKaelys Client - Login")
+            self.title("NaviTrack - Login")
             # self.configure(fg_color="#2d4d66")
             self.geometry("600x650")
             self.iconbitmap(tools.resource_path("src/static/ktrack.ico")) #changed to self.iconphoto for better compatibility (Ln 46 and 164)
@@ -79,6 +79,63 @@ class LoginWindow(ctk.CTk):
             # tools.write_log("Offline mode request awaiting...")
             # self.show_offline_request()       
     
+
+    def check_auto_login(self):
+        memory = tools.load_json(tools.resource_path("data/memory.json"))
+        if memory["local"]["Auto-Login"]:
+            self.username.insert(0, memory["local"]["Login-Username"])
+            self.password.insert(0, memory["local"]["Login-Password"])
+            self.remember.select()
+
+            # ✅ attendre que la fenêtre soit visible avant de lancer la connexion
+            self.after(320, self.login)
+
+
+    def login(self):
+        if self.api_status == "ONLINE":
+            self.login_button.configure(text="Loading...")
+            self.login_button.update()
+
+            properties = tools.load_json(tools.resource_path("properties/infos.json"))
+            version = properties["version"]
+
+            creds = {
+                "username": self.username.get(),
+                "password": self.password.get(),
+                "version": version
+            }
+            data = asyncio.run(api.get("/tracker/login", creds))
+            if data["error"]:
+                tools.write_log(data["message"], type="error")
+                self.error_label.configure(text=data["message"])
+                self.error_label.update()
+                self.login_button.configure(text="Login")
+                self.login_button.update()
+            else:
+                tools.write_log("Logged in successfully", type="info")
+                user_data = data["user"]
+                tools.save_json(user_data, tools.resource_path("data/user.json"))
+
+                if self.remember.get() == 1:
+                    memory = tools.load_json(tools.resource_path("data/memory.json"))
+                    memory["local"]["Auto-Login"] = True
+                    memory["local"]["Login-Username"] = self.username.get()
+                    memory["local"]["Login-Password"] = self.password.get()
+                    tools.save_json(memory, tools.resource_path("data/memory.json"))
+
+                self.destroy()
+                MainWindow().mainloop()
+        elif self.api_status == "NO INTERNET":
+            self.show_error("Couldn't connect to the server. Please check your network connection. [NO INTERNET]")
+        else:
+            self.show_error("The API is not available. Please try again later.")
+    
+
+    def show_error(self, message: str):
+        messagebox.showerror("Error", message)
+        self.error_label.configure(text=message)
+        tools.write_log(message, type="error")
+
 
     def on_close(self):
         try:
@@ -138,7 +195,7 @@ class LoginWindow(ctk.CTk):
         # Options row
         opts = ctk.CTkFrame(self.card, fg_color="#182636")
         opts.pack(fill="x", padx=24, pady=(4, 6))
-        self.remember = ctk.CTkCheckBox(opts, text="Remember me (soon)", state="disabled", font=self.custom_font)
+        self.remember = ctk.CTkCheckBox(opts, text="Remember me", font=self.custom_font)
         self.remember.pack(side="left", pady=8)
 
         # Status indicators
@@ -178,57 +235,8 @@ class LoginWindow(ctk.CTk):
         self.version_label = ctk.CTkLabel(footer, text=infos["version"], text_color="#8fa7be", font=self.custom_font)
         self.version_label.pack()
 
+        self.check_auto_login()
 
-
-    def login(self):
-        if self.api_status == "ONLINE":
-            self.login_button.configure(text="Loading...")
-            self.login_button.update()
-
-            properties = tools.load_json(tools.resource_path("properties/infos.json"))
-            version = properties["version"]
-
-            creds = {
-                "username": self.username.get(),
-                "password": self.password.get(),
-                "version": version
-            }
-            data = asyncio.run(api.get("/tracker/login", creds))
-            if data["error"]:
-                tools.write_log(data["message"], type="error")
-                self.error_label.configure(text=data["message"])
-                self.error_label.update()
-                self.login_button.configure(text="Login")
-                self.login_button.update()
-            else:
-                tools.write_log("Logged in successfully", type="info")
-                user_data = data["user"]
-
-                ## Encrypt the password before saving (disabled for now)
-                # encrypted_password = cipher.encrypt(creds["password"].encode()).decode()
-                # user_data["encrypted_password"] = encrypted_password
-
-                tools.save_json(user_data, tools.resource_path("data/user.json"))
-                self.destroy()
-                MainWindow().mainloop()
-        elif self.api_status == "NO INTERNET":
-            self.show_error("Couldn't connect to the server. Please check your network connection. [NO INTERNET]")
-        else:
-            self.show_error("The API is not available. Please try again later.")
-    
-
-    def show_error(self, message: str):
-        error_window = ctk.CTkToplevel()
-        error_window.geometry("300x150")
-        error_window.title("Error")
-        error_window.resizable(False, False)
-
-        ctk.CTkLabel(error_window, text="An error occured.", text_color="red", font=ctk.CTkFont(size=20, weight="bold")).pack(pady=(20, 5))
-        ctk.CTkLabel(error_window, text=message, wraplength=250).pack(pady=5)
-        ctk.CTkButton(error_window, text="Close", command=error_window.destroy).pack(pady=10)
-
-        error_window.grab_set()
-        tools.write_log(message, type="error")
 
 
 
@@ -246,17 +254,19 @@ class MainWindow(ctk.CTk):
 
         except Exception as e:
             tools.write_log(f"Couldn't build MainWindow(): {e}\n {e.__class__}\n Cause: {e.__cause__}", type="error")
+        threading.Thread(target=check_update, daemon=True).start()
 
 
     def normal_mode(self):
         success = asyncio.run(settings.load())
         if not success:
-            self.show_error("CRITICAL: Couldn't load settings. Aborting startup.")
+            tools.write_log("Couldn't load settings, exiting...", type="error")
+            messagebox.showerror("Error", "Couldn't load settings, the application will now exit.")
             sys.exit()
             return
 
         # BUILD APP
-        self.title("myKaelys Client")
+        self.title("NaviTrack - Game Tracking Software")
         self.geometry("900x730")
         self.iconbitmap(tools.resource_path("src/static/ktrack.ico"))  # Changed to self.iconphoto for better compatibility (Ln 46 and 164)
         ctk.set_appearance_mode("Dark")
@@ -314,7 +324,7 @@ class MainWindow(ctk.CTk):
         # banner
         banner = Image.open(tools.resource_path("src/static/Header.png"))
         # banner = original.resize((1200, 180))  # largeur fenêtre, hauteur bannière
-        banner_img = ctk.CTkImage(light_image=banner, dark_image=banner, size=(1000, 155))
+        banner_img = ctk.CTkImage(light_image=banner, dark_image=banner, size=(1000, 150))
 
         self.banner_label = ctk.CTkLabel(self, image=banner_img, text="")
         self.banner_label.pack(side="top", fill="x")
@@ -331,6 +341,7 @@ class MainWindow(ctk.CTk):
         # TABS
         self.tabview.add("Home")
         self.tabview.add("Live Data")
+        # self.tabview.add("Communication")
         self.tabview.add("Settings")
         self.tabview.add("Informations")
 
@@ -527,7 +538,7 @@ class MainWindow(ctk.CTk):
 if __name__ == "__main__":
     tools.save_txt("", tools.resource_path("logs.txt"))
     tools.save_txt("", tools.resource_path("crash.txt"))
-    threading.Thread(target=check_update, daemon=True).start()
     app = LoginWindow()
     app.mainloop()
+
 
