@@ -7,7 +7,8 @@ from src.components.pretools import GeneralTools
 tools = GeneralTools()
 
 
-CLIENT_ID = "1322271148167135303"  # Ton client ID Discord
+infos = tools.load_json(tools.resource_path("properties/infos.json"))
+CLIENT_ID = infos["RPC_Client"]
 
 
 
@@ -69,9 +70,7 @@ class RichPresence:
                         large_image=img,
                         large_text=game,
                         buttons=[
-                            {"label": "Discord Guild", "url": "https://discord.gg/C95vassuy4"},
-                            {"label": "Video Trailer", "url": "https://www.youtube.com/watch?v=BjgIGn5Wa4w"}
-                        ]
+                            {"label": "Visit our website", "url": "https://kaelys-virtual-trucking.com"}                        ]
                     )
                     self.previous_game = game
                     tools.write_log("Presence updated")

@@ -1,15 +1,1 @@
-{
-    "jobs": {
-        "1": {},
-        "2": {}
-    },
-    "settings": {
-        "RPC": true,
-        "Auto-Tracking": true
-    },
-    "local": {
-        "Auto-Login": true,
-        "Login-Username": "",
-        "Login-Password": ""
-    }
-}
+{"jobs": {"1": {}, "2": {}}, "settings": {"RPC": true, "Auto-Tracking": true}, "local": {"Auto-Login": true, "Login-Username": "FSimulation", "Login-Password": "Fire112k#"}}

@@ -1,7 +1,7 @@
 import customtkinter as ctk, threading, time, sys, asyncio, keyboard, aiohttp
 from PIL import Image
 from src.components.pretools import GeneralTools, KaelysAPI, AppSettings
-import src.components.operations.ui as ui
+import src.components.interface.ui_home as ui_home, src.components.interface.ui_live as ui_live, src.components.interface.ui_settings as ui_settings, src.components.interface.ui_infos as ui_infos
 import src.components.operations.discord_integ as dinteg
 from cryptography.fernet import Fernet
 from tkinter import messagebox
@@ -15,8 +15,6 @@ settings = AppSettings()
 "save_json, load_json, resource_path, write_log, save_txt, load_settings"
 
 lastData = {}
-
-tracking_disabled = True
 
 
 # Replace with your actual key
@@ -370,11 +368,11 @@ class MainWindow(ctk.CTk):
         self.frame_right_home.pack(side="right", fill="both", expand=True, padx=(10, 20), pady=10)
 
         ## LEFT FRAME CONTENTS
-        self.home_left = ui.HomeLeft(self.frame_left_home)
+        self.home_left = ui_home.HomeLeft(self.frame_left_home)
         self.home_left.pack(pady=20)
 
         ## RIGHT FRAME CONTENTS
-        self.home_right = ui.HomeRight(self.frame_right_home)
+        self.home_right = ui_home.HomeRight(self.frame_right_home)
         self.home_right.pack(pady=20)
 
         ### LIVE DATA TAB
@@ -399,11 +397,11 @@ class MainWindow(ctk.CTk):
         self.frame_right_live.pack(side="right", padx=5, pady=10)
 
         ## LEFT FRAME CONTENTS
-        self.live_drivers = ui.LiveDrivers(self.frame_left_live)
+        self.live_drivers = ui_live.LiveDrivers(self.frame_left_live)
         self.live_drivers.pack(pady=20)
 
         ## RIGHT FRAME CONTENTS
-        self.tmp_servers = ui.TMPServers(self.frame_right_live)
+        self.tmp_servers = ui_live.TMPServers(self.frame_right_live)
         self.tmp_servers.pack(pady=20)
 
         ## [UNUSED] RIGHT FRAME CONTENTS
@@ -459,11 +457,11 @@ class MainWindow(ctk.CTk):
 
 
         ## SETTINGS TAB
-        self.settings_page = ui.SettingsPage(self.tabview.tab("Settings"))
+        self.settings_page = ui_settings.SettingsPage(self.tabview.tab("Settings"))
         self.settings_page.pack(pady=20)
 
         ## INFOS TAB
-        self.infos_page = ui.InfosPage(self.tabview.tab("Informations"))
+        self.infos_page = ui_infos.InfosPage(self.tabview.tab("Informations"))
         self.infos_page.pack(pady=20)
 
 
