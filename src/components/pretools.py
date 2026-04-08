@@ -77,7 +77,7 @@ class GeneralTools():
 ## API TOOLS
 class KaelysAPI():
     def __init__(self):
-        self.API_URL = "https://api.kaelys-virtual-trucking.com"
+        self.API_URL = "https://api-kaelysvirtual.onrender.com"
         self.tools = GeneralTools()
         if not self.tools:
             raise ValueError("KaelysAPI requires a 'tools' instance.")
