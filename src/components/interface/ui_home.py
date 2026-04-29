@@ -119,31 +119,32 @@ class HomeLeft(ctk.CTkFrame):
         self.wallet_value = ctk.CTkLabel(self.wallet_frame, text="$0", font=self.custom_font)
         self.wallet_value.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="w")
 
-        # # ---- Rank ----
-        # self.rank_frame = ctk.CTkFrame(self.statistics_frame, fg_color="transparent")
-        # self.rank_frame.grid(row=2, column=0, padx=5, pady=5, sticky="ew")
-        # self.rank_frame.grid_columnconfigure(1, weight=1)
+        # [UNUSED]
+        # # ---- Trucks ----
+        # self.trucks_frame = ctk.CTkFrame(self.statistics_frame, fg_color="transparent")
+        # self.trucks_frame.grid(row=2, column=0, padx=5, pady=5, sticky="ew")
+        # self.trucks_frame.grid_columnconfigure(1, weight=1)
 
-        # self.rank_icon_label = ctk.CTkLabel(
-        #     self.rank_frame, text="",
-        #     image=ctk.CTkImage(light_image=Image.open(tools.resource_path("src/static/icon/rank.png")),
-        #                        dark_image=Image.open(tools.resource_path("src/static/icon/rank.png")), size=(48, 48))
+        # self.trucks_icon_label = ctk.CTkLabel(
+        #     self.trucks_frame, text="",
+        #     image=ctk.CTkImage(light_image=Image.open(tools.resource_path("src/static/icon/trucks.png")),
+        #                        dark_image=Image.open(tools.resource_path("src/static/icon/trucks.png")), size=(48, 48))
         # )
-        # self.rank_icon_label.grid(row=0, column=0, rowspan=2, padx=5, pady=5, sticky="w")
-        # self.rank_label = ctk.CTkLabel(self.rank_frame, text="Rank", font=self.custom_font)
-        # self.rank_label.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
-        # self.rank_value = ctk.CTkLabel(self.rank_frame, text="0", font=self.custom_font)
-        # self.rank_value.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="w")
+        # self.trucks_icon_label.grid(row=0, column=0, rowspan=2, padx=5, pady=5, sticky="w")
+        # self.trucks_label = ctk.CTkLabel(self.trucks_frame, text="Trucks", font=self.custom_font)
+        # self.trucks_label.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
+        # self.trucks_value = ctk.CTkLabel(self.trucks_frame, text="0", font=self.custom_font)
+        # self.trucks_value.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="w")
 
-        # # ---- Logbook Button ----
-        # self.logbook_btn_frame = ctk.CTkFrame(self.statistics_frame, fg_color="transparent")
-        # self.logbook_btn_frame.grid(row=2, column=1, padx=3, pady=5, sticky="ew")
-        # self.logbook_btn_frame.grid_columnconfigure(1, weight=1)
+        # ---- Logbook Button ----
+        self.logbook_btn_frame = ctk.CTkFrame(self.statistics_frame, fg_color="transparent")
+        self.logbook_btn_frame.grid(row=3, column=0, padx=3, pady=5, sticky="ew")
+        self.logbook_btn_frame.grid_columnconfigure(1, weight=1)
 
-        # self.logbook_button = ctk.CTkButton(self.logbook_btn_frame, text="Logbook", height=40,
-        #                                fg_color="#12a4b7", hover_color="#0e8ea0",
-        #                                font=self.custom_font, state="disabled")
-        # self.logbook_button.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
+        self.logbook_button = ctk.CTkButton(self.logbook_btn_frame, text="Logbook", height=40,
+                                       fg_color="#12a4b7", hover_color="#0e8ea0",
+                                       font=self.custom_font, state="disabled")
+        self.logbook_button.grid(row=0, column=1, padx=5, pady=(5, 0), sticky="w")
 
         #[UNUSED]
         # # ---- Total playtime ----
@@ -216,14 +217,14 @@ class HomeLeft(ctk.CTkFrame):
                             # self.pfp_label.image = ctk_image  # prevent garbage collection
 
                             # pfp infos
-                            self.pfp_infos.configure(text=f"{self.user['username']} #{self.user['id']}")
+                            self.pfp_infos.configure(text=f"{data['user']['username']} #{self.user['id']}")
 
                             # user role
-                            self.user_role_label.configure(text="Role:")
-                            if pick["isStaff"]:
-                                self.user_role_value.configure(text="Staff", text_color="#871D1D")
-                            else:
-                                self.user_role_value.configure(text="Driver", text_color="#0D4B57")
+                            self.user_role_label.configure(text="Membership:")
+                            if pick["memberType"] == 1:
+                                self.user_role_value.configure(text="Contractor", text_color="#9DA00E")
+                            elif pick["memberType"] == 2:
+                                self.user_role_value.configure(text="Employee", text_color="#7DA818")
 
                             # user discordID
                             self.user_discordID_label.configure(text="Discord ID:")
@@ -232,7 +233,7 @@ class HomeLeft(ctk.CTkFrame):
                             # statistics
                             self.deliveries_value.configure(text=str(pick["deliveriesTotal"]))
                             self.wallet_value.configure(text=f"${pick['wallet']}")
-                            self.rank_value.configure(text=str(pick["rank"]))
+                            # self.rank_value.configure(text=str(pick["rank"]))
                             # self.playtime_value.configure(text=f"{pick['totalPlaytime']} h")
 
                             tools.write_log("Profile loaded from API request")

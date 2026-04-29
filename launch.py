@@ -22,6 +22,7 @@ ENCRYPTION_KEY = b'GHq79RDXt6UoVUK44gutkHQOg1zKIH50UYTrKdGkCXI='
 cipher = Fernet(ENCRYPTION_KEY)
 
 
+# BASICS
 def check_update():
     try:
         properties = tools.load_json(tools.resource_path("properties/infos.json"))
@@ -52,14 +53,76 @@ def game_notif(message: str, delay=5000):
 
 
 
-# CTK INTERFACE
+
+# LAUNCHER
+class Launcher(ctk.CTk):
+    def __init__(self):
+        super().__init__()
+
+        # CHECK IF AUTOLOGIN IS ENABLED
+        memory = tools.load_json(tools.resource_path("data/memory.json"))
+        if memory["local"]["Auto-Login"]:
+            self.title("NaviTrack - Launching...")
+            # self.configure(fg_color="#2d4d66")
+            self.geometry("600x300")
+            self.iconbitmap(tools.resource_path("src/static/ktrack.ico")) #changed to self.iconphoto for better compatibility (Ln 46 and 164)
+            self.configure(fg_color="#0e1a27")
+
+            banner = Image.open(tools.resource_path("src/static/launcher_logo.png"))
+            # banner = original.resize((1200, 180))  # largeur fenêtre, hauteur bannière
+            banner_img = ctk.CTkImage(light_image=banner, dark_image=banner, size=(630, 190))
+            banner_label = ctk.CTkLabel(self, image=banner_img, text="")
+            banner_label.pack(pady=(10, 20))
+
+            ctk.set_appearance_mode("Dark")
+            # ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
+            self.resizable(False, False)
+            label = ctk.CTkLabel(self, text="Please wait...", font=("Poppins", 16, "bold"))
+            label.pack(pady=5)
+            self.after(1000, self.auth)
+        
+        # redirect to login if auto-login is not enabled
+        else:
+            self.destroy()
+            launch = LoginWindow()
+            launch.mainloop()
+
+    
+    def auth(self):
+        try:
+            memory = tools.load_json(tools.resource_path("data/memory.json"))
+            log_inst = dinteg.LoginV2(memory["local"]["Login-Username"])
+            success, user_data = log_inst.autologin()
+
+            if success:
+                tools.save_json(user_data, tools.resource_path("data/user.json"))
+                self.destroy()
+                app = MainWindow()
+                app.mainloop()
+
+            else:
+                self.show_error("Unable to authenticate your account automatically. If the problem persists, please contact support. \nRedirecting to login page.")
+                self.destroy()
+                redirect = LoginWindow()
+                redirect.mainloop()
+        
+        except Exception as e:
+            tools.write_log(f"Error during autologin: {e}", type="error")
+            self.show_error("An error occurred during autologin. Please make sure you have a stable internet connection and try again. If the problem persists, please contact support. \nRedirecting to login page.")
+            self.destroy()
+            redirect = LoginWindow()
+            redirect.mainloop()
+            
+
+
+# LOGIN INTERFACE
 class LoginWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         try:
             self.title("NaviTrack - Login")
             # self.configure(fg_color="#2d4d66")
-            self.geometry("600x650")
+            self.geometry("600x670")
             self.iconbitmap(tools.resource_path("src/static/ktrack.ico")) #changed to self.iconphoto for better compatibility (Ln 46 and 164)
             # icon_path = tools.resource_path("src/static/ktrack.png")
             # icon_image = Image.open(icon_path)
@@ -89,40 +152,47 @@ class LoginWindow(ctk.CTk):
             self.after(320, self.login)
 
 
+    def get_safety_code(self):
+        # print(self.username.get())
+        # check if username field is empty
+        if self.username.get() == "":
+            self.show_error("Please enter your Discord username to get your safety code.")
+            return
+        # get code from the API
+        log_inst = dinteg.LoginV2(self.username.get())
+        success = log_inst.get_code()
+        # manage errors
+        if not success:
+            self.show_error("Couldn't retrieve safety code. Please make sure you entered the correct username. If the problem persists, please contact support.")
+        else:
+            self.show_info(f"Please check your Discord DMs for your safety code. \nIf you didn't receive it, please try again or contact support if the problem persists.")
+
+
     def login(self):
         if self.api_status == "ONLINE":
             self.login_button.configure(text="Loading...")
             self.login_button.update()
 
-            properties = tools.load_json(tools.resource_path("properties/infos.json"))
-            version = properties["version"]
+            log_inst = dinteg.LoginV2(self.username.get())
+            success, user_data = log_inst.auth(self.password.get())
 
-            creds = {
-                "username": self.username.get(),
-                "password": self.password.get(),
-                "version": version
-            }
-            data = asyncio.run(api.get("/tracker/login", creds))
-            if data["error"]:
-                tools.write_log(data["message"], type="error")
-                self.error_label.configure(text=data["message"])
-                self.error_label.update()
+            if success:
+                tools.save_json(user_data, tools.resource_path("data/user.json"))
+            else:
+                self.show_error("Couldn't authenticate. Please make sure you entered the correct safety code and try again. If the problem persists, please contact support.")
                 self.login_button.configure(text="Login")
                 self.login_button.update()
-            else:
-                tools.write_log("Logged in successfully", type="info")
-                user_data = data["user"]
-                tools.save_json(user_data, tools.resource_path("data/user.json"))
+                return
+            
+            if self.remember.get():
+                memory = tools.load_json(tools.resource_path("data/memory.json"))
+                memory["local"]["Auto-Login"] = True
+                memory["local"]["Login-Username"] = self.username.get()
+                memory["local"]["Last-Login-Code"] = self.password.get()
+                tools.save_json(memory, tools.resource_path("data/memory.json"))
 
-                if self.remember.get() == 1:
-                    memory = tools.load_json(tools.resource_path("data/memory.json"))
-                    memory["local"]["Auto-Login"] = True
-                    memory["local"]["Login-Username"] = self.username.get()
-                    memory["local"]["Login-Password"] = self.password.get()
-                    tools.save_json(memory, tools.resource_path("data/memory.json"))
-
-                self.destroy()
-                MainWindow().mainloop()
+            self.destroy()
+            MainWindow().mainloop()
         elif self.api_status == "NO INTERNET":
             self.show_error("Couldn't connect to the server. Please check your network connection. [NO INTERNET]")
         else:
@@ -131,8 +201,13 @@ class LoginWindow(ctk.CTk):
 
     def show_error(self, message: str):
         messagebox.showerror("Error", message)
-        self.error_label.configure(text=message)
+        self.error_label.configure(text="An error occured.", text_color="red")
         tools.write_log(message, type="error")
+
+
+    def show_info(self, message: str):
+        messagebox.showinfo("Info", message)
+        tools.write_log(message)
 
 
     def on_close(self):
@@ -165,7 +240,7 @@ class LoginWindow(ctk.CTk):
 
         # ===== Top banner / logo =====
         self.header = ctk.CTkFrame(self, fg_color="#0e1a27")
-        self.header.pack(fill="x", pady=(26, 0))
+        self.header.pack(fill="x", pady=(30, 0))
 
         pil_logo = Image.open(tools.resource_path("src/static/LoginBanner.png"))
         logo_img = ctk.CTkImage(pil_logo, size=(175, 175))
@@ -180,14 +255,14 @@ class LoginWindow(ctk.CTk):
         user_row = ctk.CTkFrame(self.card, fg_color="#1d2d40", corner_radius=12)
         user_row.pack(fill="x", padx=24, pady=(24, 10))
         ctk.CTkLabel(user_row, text="👤", width=24, font=ctk.CTkFont(size=16)).pack(side="left", padx=12, pady=10)
-        self.username = ctk.CTkEntry(user_row, placeholder_text="Username", border_width=0, font=self.custom_font, fg_color="#253446")
+        self.username = ctk.CTkEntry(user_row, placeholder_text="Discord Username", border_width=0, font=self.custom_font, fg_color="#253446")
         self.username.pack(side="left", fill="x", expand=True, padx=(6, 10), pady=10)
 
         # Password row
         pass_row = ctk.CTkFrame(self.card, fg_color="#1d2d40", corner_radius=12)
         pass_row.pack(fill="x", padx=24, pady=10)
         ctk.CTkLabel(pass_row, text="🔒", width=24, font=ctk.CTkFont(size=16)).pack(side="left", padx=12, pady=10)
-        self.password = ctk.CTkEntry(pass_row, placeholder_text="Password", show="•", border_width=0, font=self.custom_font, fg_color="#253446")
+        self.password = ctk.CTkEntry(pass_row, placeholder_text="Safety Code", show="•", border_width=0, font=self.custom_font, fg_color="#253446")
         self.password.pack(side="left", fill="x", expand=True, padx=(6, 10), pady=10)
 
         # Options row
@@ -211,16 +286,16 @@ class LoginWindow(ctk.CTk):
 
         self.status_text.pack(side="right", padx=(0, 12))
 
+        self.code_button = ctk.CTkButton(self.card, text="Get your safety code", height=35,
+                                         fg_color="#25374a", hover_color="#213140", 
+                                         command=self.get_safety_code, font=self.custom_font)
+        self.code_button.pack(fill="x", padx=24, pady=(20, 0))
+
         # Buttons
         self.login_button = ctk.CTkButton(self.card, text="Login", height=44,
                                        fg_color="#12a4b7", hover_color="#0e8ea0",
                                        command=self.login, font=self.custom_font)
         self.login_button.pack(fill="x", padx=24, pady=(10, 8))
-        
-        self.offline_btn = ctk.CTkButton(self.card, text="Enable offline mode (soon)",
-                                         fg_color="#25374a", hover_color="#213140",
-                                         state="disabled", font=self.custom_font)
-        self.offline_btn.pack(fill="x", padx=24, pady=(0, 22))
 
         # error label
         self.error_label = ctk.CTkLabel(self.card, text="", text_color="red", font=self.custom_font)
@@ -237,8 +312,7 @@ class LoginWindow(ctk.CTk):
 
 
 
-
-
+# MAIN INTERFACE
 class MainWindow(ctk.CTk):
     def __init__(self, offline_mode: bool = False):
         super().__init__()
@@ -536,7 +610,7 @@ class MainWindow(ctk.CTk):
 if __name__ == "__main__":
     tools.save_txt("", tools.resource_path("logs.txt"))
     tools.save_txt("", tools.resource_path("crash.txt"))
-    app = LoginWindow()
+    app = Launcher()
     app.mainloop()
 
 
