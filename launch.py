@@ -77,7 +77,7 @@ class Launcher(ctk.CTk):
             ctk.set_appearance_mode("Dark")
             # ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
             self.resizable(False, False)
-            label = ctk.CTkLabel(self, text="Please wait...", font=("Poppins", 16, "bold"))
+            label = ctk.CTkLabel(self, text="Please wait...", font=("Arial", 16, "italic"), text_color="grey")
             label.pack(pady=5)
             self.after(1000, self.auth)
         
