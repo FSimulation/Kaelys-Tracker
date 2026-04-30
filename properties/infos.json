@@ -1,14 +1,17 @@
 {
-    "version": "v.05-08-2025 Public Build",
+    "version": "v2.1 (beta)",
+    "version_history": [
+      "v2.0",
+      "v2.0.1",
+      "v2.1"
+    ],
     "how_to_install": "*Place the scs-telemetry.dll file in this folder:\n'C:\\Programs (x86)\\Steam\\steamapps\\common\\Euro Truck Simulator 2 or American Truck Simulator\\bin\\win_x64\\plugins'",
     "how_to_use": "*Launch ktrack.exe and start the tracking when the game is launched.\n*Your KaelysHUB credentials are required.\n*Make sure to launch the app every time you want to track you deliveries.",
     "changelog": [
-      "- Complete rework of the whole interface",
-      "- User's profile redesigned",
-      "- Game display redesigned",
-      "- Added new tab for live data",
-      "- Moved live drivers display to the new live data tab",
-      "- Added TruckersMP servers infos, including traffic in the new live data tab"
+      "- Backend update",
+      "- RPC updated (new text and logo)",
+      "- Minor UI changes",
+      "More changes are coming later."
     ],
     "hotkeys": [
         "Ctrl+1: Start driving",
@@ -18,5 +21,6 @@
         "Ctrl+5: Take 8h break",
         "Ctrl+6: Stop driving"
     ],
-    "credits": "- FSimulation (Lead Developer)\n- HexSK (Assistant Developer)"
+    "credits": "- FSimulation (Lead Developer)\n- HexSK (Assistant Developer)",
+    "RPC_Client": 1370341805769625732
 }

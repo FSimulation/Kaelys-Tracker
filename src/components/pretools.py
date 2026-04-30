@@ -77,7 +77,7 @@ class GeneralTools():
 ## API TOOLS
 class KaelysAPI():
     def __init__(self):
-        self.API_URL = "https://api.kaelys-virtual-trucking.com"
+        self.API_URL = "https://api-kaelysvirtual.onrender.com"
         self.tools = GeneralTools()
         if not self.tools:
             raise ValueError("KaelysAPI requires a 'tools' instance.")
@@ -88,6 +88,19 @@ class KaelysAPI():
             self.tools.write_log("API -> GET STATUS")
             async with session.get(f"{self.API_URL}/") as response:
                 return response.status
+            
+    
+    async def get_tracker_latest(self):
+        async with aiohttp.ClientSession() as session:
+            self.tools.write_log("API -> GET LATEST VERSION")
+            async with session.get(f"{self.API_URL}/tracker/version") as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data["latestVersion"]
+                else:
+                    message = "Interaction with the API has failed"
+                    self.tools.write_log(message, type="error")
+                    return {"error": True, "message": message}
 
 
     async def get(self, route: str, request_data: dict = None):
