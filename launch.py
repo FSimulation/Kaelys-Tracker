@@ -1,7 +1,7 @@
 import customtkinter as ctk, threading, time, sys, asyncio, keyboard, aiohttp
 from PIL import Image
 from src.components.pretools import GeneralTools, KaelysAPI, AppSettings
-import src.components.interface.ui_home as ui_home, src.components.interface.ui_live as ui_live, src.components.interface.ui_settings as ui_settings, src.components.interface.ui_infos as ui_infos
+import src.components.interface.ui_home as ui_home, src.components.interface.ui_live as ui_live, src.components.interface.ui_settings as ui_settings, src.components.interface.ui_infos as ui_infos, src.components.interface.ui_fleet as ui_fleet
 import src.components.operations.discord_integ as dinteg
 from cryptography.fernet import Fernet
 from tkinter import messagebox
@@ -413,6 +413,7 @@ class MainWindow(ctk.CTk):
         # TABS
         self.tabview.add("Home")
         self.tabview.add("Live Data")
+        self.tabview.add("Fleet")
         # self.tabview.add("Communication")
         self.tabview.add("Settings")
         self.tabview.add("Informations")
@@ -448,6 +449,19 @@ class MainWindow(ctk.CTk):
         ## RIGHT FRAME CONTENTS
         self.home_right = ui_home.HomeRight(self.frame_right_home)
         self.home_right.pack(pady=20)
+
+
+        ### FLEET TAB
+        self.frame_fleet = ctk.CTkFrame(
+            self.tabview.tab("Fleet"),
+            width=340,
+            height=300,
+            fg_color="#1C2B3A",
+            corner_radius=10
+        )
+        self.frame_fleet.pack(side="left", fill="both", expand=True, padx=(10, 20), pady=10)
+        self.fleet = ui_fleet.Fleet(self.frame_fleet)
+        self.fleet.pack(fill="both", expand=True)
 
         ### LIVE DATA TAB
         ## LEFT FRAME
