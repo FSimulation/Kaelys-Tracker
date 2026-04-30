@@ -70,7 +70,7 @@ class Fleet(ctk.CTkFrame):
 
         self._add_info_row(info_card, 1, "Truck:", "Man F2000 Evo")
         self._add_info_row(info_card, 2, "Odometer:", "123,929 km")
-        self._add_info_row(info_card, 3, "Company:", "NaviTrack")
+        self._add_info_row(info_card, 3, "Powertrain:", "baguettes")
 
         return game_frame
 
