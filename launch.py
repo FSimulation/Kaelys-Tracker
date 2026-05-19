@@ -413,7 +413,7 @@ class MainWindow(ctk.CTk):
         # TABS
         self.tabview.add("Home")
         self.tabview.add("Live Data")
-        self.tabview.add("Fleet")
+        # self.tabview.add("Fleet")
         # self.tabview.add("Communication")
         self.tabview.add("Settings")
         self.tabview.add("Informations")
