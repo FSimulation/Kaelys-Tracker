@@ -62,10 +62,10 @@ class Launcher(ctk.CTk):
         # CHECK IF AUTOLOGIN IS ENABLED
         memory = tools.load_json(tools.resource_path("data/memory.json"))
         if memory["local"]["Auto-Login"]:
-            self.title("NaviTrack - Launching...")
+            self.title("Walt & Co Tracker - Launching...")
             # self.configure(fg_color="#2d4d66")
             self.geometry("600x300")
-            self.iconbitmap(tools.resource_path("src/static/ktrack.ico")) #changed to self.iconphoto for better compatibility (Ln 46 and 164)
+            self.iconbitmap(tools.resource_path("src/static/walt.ico")) #changed to self.iconphoto for better compatibility (Ln 46 and 164)
             self.configure(fg_color="#0e1a27")
 
             banner = Image.open(tools.resource_path("src/static/launcher_logo.png"))
@@ -120,10 +120,10 @@ class LoginWindow(ctk.CTk):
     def __init__(self):
         super().__init__()
         try:
-            self.title("NaviTrack - Login")
+            self.title("Walt & Co Tracker - Login")
             # self.configure(fg_color="#2d4d66")
             self.geometry("600x670")
-            self.iconbitmap(tools.resource_path("src/static/ktrack.ico")) #changed to self.iconphoto for better compatibility (Ln 46 and 164)
+            self.iconbitmap(tools.resource_path("src/static/walt.ico")) #changed to self.iconphoto for better compatibility (Ln 46 and 164)
             # icon_path = tools.resource_path("src/static/ktrack.png")
             # icon_image = Image.open(icon_path)
             # icon_photo = ImageTk.PhotoImage(icon_image)
@@ -338,9 +338,9 @@ class MainWindow(ctk.CTk):
             return
 
         # BUILD APP
-        self.title("NaviTrack - Game Tracking Software")
+        self.title("Walt & Co Tracker")
         self.geometry("900x730")
-        self.iconbitmap(tools.resource_path("src/static/ktrack.ico"))  # Changed to self.iconphoto for better compatibility (Ln 46 and 164)
+        self.iconbitmap(tools.resource_path("src/static/walt.ico"))  # Changed to self.iconphoto for better compatibility (Ln 46 and 164)
         ctk.set_appearance_mode("Dark")
         self.configure(fg_color="#0f1a27")  # deep navy
         # ctk.set_default_color_theme(tools.resource_path("src/theme.json"))
